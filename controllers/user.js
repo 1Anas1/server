@@ -9,6 +9,9 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const UserSocket =require('../models/UserSocket');
+const { Family, Category,Product } = require('../models/Product');
+
+const Operation = require('../models/Operation');
 
 dotenv.config();
 
@@ -151,7 +154,7 @@ exports.GetAllInfoUser = async (req, res) => {
 };
 
 
-exports.signupMember = async (req, res) => {
+/*exports.signupMember = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
@@ -189,7 +192,7 @@ exports.signupMember = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
-};
+};*/
 
 
 
@@ -344,6 +347,147 @@ exports.childSignup = async (req, res) => {
   }
 };
 
+exports.SignupMember = async (req, res) => {
+  try {
+    const { firstName,
+      lastName,
+      email,
+      password,
+    image} = req.body;
+
+    
+    // Create child role if it doesn't exist
+
+    let childRole = await Role.findOne({ name: "member" });
+    if (!childRole) {
+      childRole = new Role({
+        name: "member",
+      });
+      await childRole.save();
+    }
+    childRoleId = childRole._id;
+
+    // Check if child user already exists
+    const existingUser = await User.findOne({email,}).populate({
+      path: "role",
+      match: { $or: [{ name: "member" }, { name: "child" }] },
+    });
+    console.log('emchy0001');
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create child user
+    
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password:hashedPassword,
+      status: true,
+      role: childRoleId,
+    });
+    // Decode and save the image
+    const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const decodedImage = Buffer.from(image, 'base64');
+    const imageExtension = image.substring("data:image/".length, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.jpg`; // Generate a unique name for the image
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, decodedImage);
+
+    // Store the image URI in the user model
+    user.image = imageName;
+   
+    console.log('emchy3');
+    await user.save();
+
+
+    res.status(201).json({userId:user._id, message: "Child user created successfully." });
+  } catch (error) {
+    
+    console.log(error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
+exports.getPaymentStatisticsByCategory = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
+    const categories = await Category.find(); // Get all categories
+    const userStatistics = [];
+
+    for (const category of categories) {
+      const operations = await Operation.aggregate([
+        {
+          $match: {
+            userId,
+            approved: true,
+            type: "payment",
+            date: {
+              $gte: new Date(currentYear, currentMonth, 1), // Start of the current month
+              $lt: new Date(currentYear, currentMonth + 1, 1), // Start of the next month
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "operationLines",
+            localField: "_id",
+            foreignField: "operation",
+            as: "operationLines",
+          },
+        },
+        {
+          $unwind: "$operationLines",
+        },
+        {
+          $lookup: {
+            from: "category",
+            localField: "operationLines.category",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+        {
+          $match: {
+            "category.name": category.name,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$operationLines.amount" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            category: category.name,
+            year: currentYear,
+            month: currentMonth + 1,
+            totalAmount: 1,
+          },
+        },
+      ]);
+
+      const categoryStatistics = operations[0] || { totalAmount: 0 };
+
+      userStatistics.push(categoryStatistics);
+    }
+
+    res.json(userStatistics);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
 
 
 
@@ -380,7 +524,7 @@ exports.proSignup = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
     // Finding the parent user with jwt token
-    const parent = await User.findById(req.userId);
+    
     // Create child role if it doesn't exist
     let proRole = await Role.findOne({ name: "professional" });
     if (!proRole) {
