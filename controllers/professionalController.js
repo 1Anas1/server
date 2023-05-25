@@ -1,6 +1,8 @@
 const Chain = require('../models/chain');
 const SellingPoint = require('../models/sellingPoint');
-const User = require('../models/User');
+const User = require('../models/User');const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const Role = require("../models/Role");
 
 exports.createChain = async function(req, res) {
   try {
@@ -91,4 +93,35 @@ exports.createSellingPoint = async function(req, res) {
     console.log(ex);
     res.status(500).send('An error occurred while creating the selling point.');
   }
+};
+
+//sign in admin et pro
+exports.signin = async (req, res,io) => {
+  const { email, password } = req.body;
+
+  // Check if user with given email and role "member" exists
+  const existingUser = await User.findOne({ email }).populate({
+    path: "role",
+    match: { $or: [{ name: "admin" }, { name: "professional" }] },
+  });
+
+  if (!existingUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Check if password is correct
+  const passwordMatch = await bcrypt.compare(password, existingUser.password);
+
+  if (!passwordMatch) {
+    return res.status(401).json({ message: "Incorrect password" });
+  }
+
+  // Generate JWT token with user ID and role
+  const token = jwt.sign(
+    { userId: existingUser._id, role: existingUser.role.name },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+  role =existingUser.role.name;
+  res.status(200).json({ token, role});
 };

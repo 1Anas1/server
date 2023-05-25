@@ -152,6 +152,46 @@ exports.GetAllInfoUser = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+exports.GetAllUser = async (req, res) => {
+  try {
+    if(req.userRole==="admin"){
+  
+    console.log("hhhh");
+    const roles = await Role.find({ name: { $in: ["member", "professional"] } });
+    const roleIds = roles.map((role) => role._id);
+    console.log("hhhh");
+    const users = await User.find({ role: { $in: roleIds } });
+    console.log("hhhh");
+    const categorizedUsers = {
+      member: [],
+      professional: [],
+    };
+
+    users.forEach((user) => {
+      if (user.role.toString() === roles[0]._id.toString()) {
+        categorizedUsers.member.push(user);
+      } else if (user.role.toString() === roles[1]._id.toString()) {
+        categorizedUsers.professional.push(user);
+      }
+    });
+
+    const response = {
+      member: categorizedUsers.member,
+      professional: categorizedUsers.professional,
+    };
+
+    res.json(response);
+  
+    }
+    if(req.userRole==="professional"){
+      
+    }
+   
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 
 /*exports.signupMember = async (req, res) => {
