@@ -45,6 +45,7 @@ app.use('/checkout', checkoutRoute(io));
 app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
 app.post('/signupMember', userController.signupMember);
+app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });
