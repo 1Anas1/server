@@ -528,6 +528,165 @@ exports.getPaymentStatisticsByCategory = async (req, res) => {
 };
 
 
+exports.transfer = async (req, res) => {
+  const { idSender, idReceiver, amount } = req.body;
+
+  try {
+    if (req.userRole === 'member') {
+      const user = await User.findById(req.userId).populate('bracelets').populate({
+        path: 'children',
+        populate: { path: 'bracelets' }
+      });
+
+      if (user) {
+        const senderBracelet = user.bracelets.find((bracelet) => bracelet._id.toString() === idSender);
+        const child = user.children.find((child) => child.bracelets.some((bracelet) => bracelet._id.toString() === idReceiver));
+
+        if (senderBracelet && child) {
+          const receiverBracelet = child.bracelets.find((bracelet) => bracelet._id.toString() === idReceiver);
+
+          if (senderBracelet.amount < amount) {
+            return res.status(400).json({ error: 'Insufficient balance' });
+          }
+
+          senderBracelet.amount -= amount;
+          receiverBracelet.amount += amount;
+
+          await senderBracelet.save();
+          await receiverBracelet.save();
+          await user.save();
+          await child.save();
+
+          const operation = new Operation({
+            type: 'transfer',
+            bracelet: senderBracelet._id,
+            braceletReceiver: receiverBracelet._id,
+            approved: true,
+            amount: amount,
+            date: Date.now()
+          });
+
+          await operation.save();
+
+          const receiverUser = await User.findById(child._id);
+
+          res.json({
+            message: 'Transfer successful',
+            receiverBracelet: receiverBracelet._id,
+            date: operation.date,
+            amount: amount,
+            lastName: receiverUser.lastName,
+            firstName: receiverUser.firstName,
+            image: receiverUser.image
+          });
+        } else {
+          res.status(404).json({ error: 'Bracelet not found' });
+        }
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    } else if (req.userRole === 'child') {
+      const user = await User.findOne({ _id: req.userId }).populate('bracelets');
+      const parent = await User.findOne({ children: req.userId }).populate({
+        path: 'children',
+        populate: { path: 'bracelets' }
+      });
+
+      if (parent) {
+        const senderBracelet = user.bracelets.find((bracelet) => bracelet._id.toString() === idSender);
+        const receiverChild = parent.children.find((child) => child.bracelets.some((bracelet) => bracelet._id.toString() === idReceiver));
+        const parentReceiverBracelet = parent.bracelets.find((bracelet) => bracelet._id.toString() === idReceiver);
+
+        if (senderBracelet && receiverChild) {
+          const receiverBracelet = receiverChild.bracelets.find((bracelet) => bracelet._id.toString() === idReceiver);
+
+          if (receiverBracelet) {
+            if (senderBracelet.amount < amount) {
+              return res.status(400).json({ error: 'Insufficient balance' });
+            }
+
+            senderBracelet.amount -= amount;
+            receiverBracelet.amount += amount;
+            await senderBracelet.save();
+            await receiverBracelet.save();
+            await user.save();
+            await receiverChild.save();
+
+            const operation = new Operation({
+              type: 'transfer',
+              bracelet: senderBracelet._id,
+              braceletReceiver: receiverBracelet._id,
+              approved: true,
+              amount: amount,
+              date: Date.now()
+            });
+
+            await operation.save();
+
+            const receiverUser = await User.findById(receiverChild._id);
+
+            res.json({
+              message: 'Transfer successful',
+              receiverBracelet: receiverBracelet._id,
+              date: operation.date,
+              amount: amount,
+              lastName: receiverUser.lastName,
+              firstName: receiverUser.firstName,
+              image: receiverUser.image
+            });
+          } else if (parentReceiverBracelet) {
+            if (senderBracelet.amount < amount) {
+              return res.status(400).json({ error: 'Insufficient balance' });
+            }
+
+            senderBracelet.amount -= amount;
+            parentReceiverBracelet.amount += amount;
+            await senderBracelet.save();
+            await receiverBracelet.save();
+            await user.save();
+            await parent.save();
+
+            const operation = new Operation({
+              type: 'transfer',
+              bracelet: senderBracelet._id,
+              braceletReceiver: parentReceiverBracelet._id,
+              approved: true,
+              amount: amount,
+              date: Date.now()
+            });
+
+            await operation.save();
+
+            const receiverUser = await User.findById(parent._id);
+
+            res.json({
+              message: 'Transfer successful',
+              receiverBracelet: parentReceiverBracelet._id,
+              amount: amount,
+              date: operation.date,
+              lastName: receiverUser.lastName,
+              firstName: receiverUser.firstName,
+              image: receiverUser.image
+            });
+          } else {
+            res.status(404).json({ error: 'Bracelet not found' });
+          }
+        } else {
+          res.status(404).json({ error: 'Bracelet not found' });
+        }
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    } else {
+      res.status(403).json({ error: 'Forbidden' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
 
 
 

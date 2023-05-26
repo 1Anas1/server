@@ -26,6 +26,7 @@ const userController = require('./controllers/user');
 const professionalRoutes = require('./routes/professional');
 const checkoutRoute = require('./routes/checkout');
 const authMember = require('./middleware/memberAuth');
+const authMemberChild = require('./middleware/memberAndChild');
 const adminMiddleware = require('./middleware/adminMiddleware');
 const createAdmin = require('./controllers/createAdmin');
 
@@ -46,6 +47,7 @@ app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
 app.post('/signupMember', userController.SignupMember);
 app.post('/stat', userController.getPaymentStatisticsByCategory);
+app.post('/transfer', authMemberChild,userController.transfer);
 
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
@@ -86,6 +88,9 @@ io.on('connection', (socket) => {
     console.log(socket.id);
     userSocket.save();
     const user = await User.findById(userId).populate('role').populate({
+      path: 'children',
+      populate: { path: 'bracelets' }
+    }).populate({
       path: 'bracelets',
       populate: {
         path: 'operations',
@@ -95,7 +100,7 @@ io.on('connection', (socket) => {
         ]
       }
     })
-    .populate('children').exec();
+    .exec();
     io.to(userSocket.socketId).emit('user_info', user);
   });
   // When a user disconnects
@@ -109,11 +114,21 @@ io.on('connection', (socket) => {
   socket.on('get_user_info', async (data) => {
     try {
       console.log("temchy getuser",data)
-      const user = await User.findById(data)
-        .populate('role')
-        .populate('bracelets')
-        .populate('children')
-        .exec();
+      const user = await User.findById(data).populate('role').populate({
+        path: 'children',
+        populate: { path: 'bracelets' }
+      }).populate({
+        path: 'bracelets',
+        populate: {
+          path: 'operations',
+          populate:  [
+            { path: 'sellingPoint' },
+            { path: 'operationLines', populate: { path: 'product', select: 'name' } }
+          ]
+        }
+      })
+      .exec();
+        console.log("hhh",user.children)
 
       // Emit the user information back to the client
       socket.emit('user_info', user);
