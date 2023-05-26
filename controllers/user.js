@@ -835,8 +835,7 @@ exports.bloquerbracelet = async (req, res,io) => {
       const bracelet = await Bracelet.findById(id_bracelet);
 
       if (bracelet) {
-        bracelet.is_disabled =!bracelet.is_disabled;
-        await bracelet.save();
+        await bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: !foundBracelet.is_disabled });
         res.status(200).json({ message: 'Bracelet blocked successfully for admin' });
       } else {
         res.status(404).json({ message: 'Bracelet not found' });
@@ -846,8 +845,8 @@ exports.bloquerbracelet = async (req, res,io) => {
       const bracelet = await Bracelet.findOne({ user: child._id, _id: id_bracelet });
 
       if (bracelet) {
-        bracelet.is_disabled = true;
-        await bracelet.save();
+        await bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: true });
+        
         res.status(200).json({ message: 'Bracelet blocked successfully for child' });
       } else {
         res.status(404).json({ message: 'Bracelet not found for the child' });
