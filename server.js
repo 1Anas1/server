@@ -49,6 +49,7 @@ app.post('/signupMember', userController.SignupMember);
 app.post('/stat', userController.getPaymentStatisticsByCategory);
 app.post('/transfer', authMemberChild,userController.transfer);
 
+app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });

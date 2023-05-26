@@ -192,7 +192,43 @@ exports.GetAllUser = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+exports.removeChildAndTransferBraceletAmount = async (req, res) => {
+  try {
+    const { childId, parentId } = req.body;
 
+    // Rechercher l'enfant à supprimer
+    const child = await User.findById(childId).populate('bracelets');
+    if (!child) {
+      return res.status(404).json({ message: 'Enfant non trouvé' });
+    }
+
+    // Rechercher le parent
+    const parent = await User.findById(parentId).populate('bracelets');
+    if (!parent) {
+      return res.status(404).json({ message: 'Parent non trouvé' });
+    }
+   console.log(parent.bracelets[0].amount)
+    // Récupérer le montant du bracelet de l'enfant
+    const braceletAmount = child.bracelets.reduce((total, bracelet) => total + bracelet.amount, 0);
+     console.log(braceletAmount);
+    // Ajouter le montant du bracelet au parent
+    parent.bracelets[0].amount+=braceletAmount;
+    console.log(parent.bracelets[0].amount)
+    // Supprimer les bracelets de l'enfant
+    await Bracelet.deleteMany({ user: childId });
+
+    // Enregistrer les modifications du parent
+     await parent.bracelets[0].save();
+
+    // Supprimer l'enfant
+    await User.findByIdAndDelete(childId);
+
+    res.json({ message: 'Enfant supprimé avec succès, les bracelets ont également été supprimés et le montant du bracelet a été transféré au parent.' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'enfant :', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 /*exports.signupMember = async (req, res) => {
   try {
