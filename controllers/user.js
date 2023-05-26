@@ -826,8 +826,7 @@ exports.bloquerbracelet = async (req, res,io) => {
       }
 
       if (foundBracelet) {
-        foundBracelet.is_disabled = !foundBracelet.is_disabled;
-        await foundBracelet.save();
+        await Bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: !foundBracelet.is_disabled });
         res.status(200).json({ message: 'Bracelet status updated successfully for member' });
       } else {
         res.status(404).json({ message: 'Bracelet not found' });
