@@ -801,11 +801,12 @@ exports.bloquerbracelet = async (req, res) => {
     const { id_bracelet } = req.body;
 
     if (req.userRole === 'member') {
+      
       const parent = await User.findById(req.userId).populate({
         path: 'children',
         populate: { path: 'bracelets' }
       });
-
+      console.log(parent)
       let foundBracelet = null;
 
       // Check if the bracelet belongs to the parent
@@ -813,10 +814,12 @@ exports.bloquerbracelet = async (req, res) => {
         foundBracelet = parent.bracelets[0];
       } else {
         // Check if the bracelet belongs to any of the children
+       
         parent.children.forEach(child => {
           const bracelet = child.bracelets[0];
-
+        
           if (bracelet._id.toString() === id_bracelet) {
+           
             foundBracelet = bracelet;
           }
         });
