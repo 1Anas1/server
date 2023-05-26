@@ -796,7 +796,7 @@ exports.proSignup = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-exports.bloquerbracelet = async (req, res) => {
+exports.bloquerbracelet = async (req, res,io) => {
   try {
     const { id_bracelet } = req.body;
 
