@@ -637,3 +637,15 @@ exports.proSignup = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+exports.bloquerbracelet = async (req, res) => {
+  try {
+    const { id_bracelet } = req.body;
+    const bracelet=Bracelet.findById(id_bracelet);
+    bracelet.is_disabled=true;
+    bracelet.save();
+   
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
