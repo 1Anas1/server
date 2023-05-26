@@ -44,20 +44,23 @@ app.use('/api/professional', professionalRoutes);
 app.use('/checkout', checkoutRoute(io));
 app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
-app.post('/signupMember', userController.signupMember);
+app.post('/signupMember', userController.SignupMember);
+app.post('/stat', userController.getPaymentStatisticsByCategory);
+
 app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });
 app.get('/GetAllInfoUser',authMember,userController.GetAllInfoUser)
-app.post('/createBracelet',authMember,userController.createBracelet)
+app.post('/createBracelet',userController.createBracelet)
 app.post('/addAmount',authMember, (req, res) => {
   userController.addAmount(req, res, io);
 })
 app.post('/childSignup',authMember, userController.childSignup);
+app.post('/SignupMember',userController.SignupMember);
 app.post('/adminLogin', userController.adminLogin);
 
-app.post('/pro/signup',adminMiddleware, userController.proSignup);
+app.post('/pro/signup', userController.proSignup);
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
