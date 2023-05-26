@@ -11,6 +11,10 @@ const operationSchema = new mongoose.Schema({
     ref: 'Bracelet',
     required: true,
   },
+ braceletReceiver:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Bracelet',
+},
   sellingPoint: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'SellingPoint',
