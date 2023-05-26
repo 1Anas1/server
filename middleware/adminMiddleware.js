@@ -16,7 +16,9 @@ module.exports = (req, res, next) => {
           if (err) {
             return res.status(500).json({ message: 'An error occurred while fetching user data' });
           } else {
-            if (user.role.name === 'admin') { // Check if the user has admin role
+            if (user.role.name === 'admin') { 
+              req.userRole  = user.role.name;
+              req.userId = userId;// Check if the user has admin role
               next(); // Call the next middleware function
             } else {
               return res.status(403).json({ message: 'You do not have permission to perform this action' });

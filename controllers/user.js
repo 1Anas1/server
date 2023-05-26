@@ -799,12 +799,64 @@ exports.proSignup = async (req, res) => {
 exports.bloquerbracelet = async (req, res) => {
   try {
     const { id_bracelet } = req.body;
-    const bracelet=Bracelet.findById(id_bracelet);
-    bracelet.is_disabled=true;
-    bracelet.save();
-   
+
+    if (req.userRole === 'member') {
+      const parent = await User.findById(req.userId).populate({
+        path: 'children',
+        populate: { path: 'bracelets' }
+      });
+
+      let foundBracelet = null;
+
+      // Check if the bracelet belongs to the parent
+      if (parent.bracelets[0]._id.toString() === id_bracelet) {
+        foundBracelet = parent.bracelets[0];
+      } else {
+        // Check if the bracelet belongs to any of the children
+        parent.children.forEach(child => {
+          const bracelet = child.bracelets[0];
+
+          if (bracelet._id.toString() === id_bracelet) {
+            foundBracelet = bracelet;
+          }
+        });
+      }
+
+      if (foundBracelet) {
+        foundBracelet.is_disabled = !foundBracelet.is_disabled;
+        await foundBracelet.save();
+        res.status(200).json({ message: 'Bracelet status updated successfully for member' });
+      } else {
+        res.status(404).json({ message: 'Bracelet not found' });
+      }
+    } else if (req.userRole === 'admin') {
+      const bracelet = await Bracelet.findById(id_bracelet);
+
+      if (bracelet) {
+        bracelet.is_disabled =!bracelet.is_disabled;
+        await bracelet.save();
+        res.status(200).json({ message: 'Bracelet blocked successfully for admin' });
+      } else {
+        res.status(404).json({ message: 'Bracelet not found' });
+      }
+    } else if (req.userRole === 'child') {
+      const child = await User.findById(req.userId);
+      const bracelet = await Bracelet.findOne({ user: child._id, _id: id_bracelet });
+
+      if (bracelet) {
+        bracelet.is_disabled = true;
+        await bracelet.save();
+        res.status(200).json({ message: 'Bracelet blocked successfully for child' });
+      } else {
+        res.status(404).json({ message: 'Bracelet not found for the child' });
+      }
+    } else {
+      res.status(403).json({ message: 'Unauthorized access' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+

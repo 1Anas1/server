@@ -15,7 +15,7 @@ const authMemberChild = (req, res, next) => {
     const userRole = decoded.role;
     
     
-    if (userRole !== 'member' && userRole !== 'member') {
+    if (userRole !== 'member' && userRole !== 'child') {
       throw new Error();
     }
    Role.findOne({ name: userRole }).then((role)=>{
