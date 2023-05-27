@@ -10,6 +10,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const UserSocket =require('../models/UserSocket');
 const { Family, Category,Product } = require('../models/Product');
+const mongoose = require('mongoose');
 
 const Operation = require('../models/Operation');
 
@@ -17,13 +18,31 @@ dotenv.config();
 
 //--------------------------socket-----------------------/
 
-async function emitToUser(userId, event, data, io) {
+async function emitToUser(userId, event, io) {
   try {
     const userSockets = await UserSocket.find({ userId });
-    console.log('connecter',userSockets);
+    console.log('connecter');
+    const user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'children',
+          populate: { path: 'bracelets' },
+        })
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
     userSockets.forEach((userSocket) => {
       const socketId = userSocket.socketId;
-      io.to(socketId).emit(event, data);
+
+      io.to(socketId).emit(event, user);
     });
   } catch (error) {
     console.error(error);
@@ -128,18 +147,8 @@ exports.addAmount = async (req, res,io) => {
   }
   bracelet.amount += amount;
   await bracelet.save();
-    const user = await User.findById(req.user._id).populate('role').populate({
-      path: 'bracelets',
-      populate: {
-        path: 'operations',
-        populate:  [
-          { path: 'sellingPoint' },
-          { path: 'operationLines', populate: { path: 'product', select: 'name' } }
-        ]
-      }
-    })
-    .populate('children').exec();
-  await emitToUser(user._id,'user_info',user,io)
+    
+  await emitToUser(req.userId,'user_info',io)
   res.json(bracelet);
 };
 exports.GetAllInfoUser = async (req, res) => {
@@ -154,34 +163,50 @@ exports.GetAllInfoUser = async (req, res) => {
 };
 exports.GetAllUser = async (req, res) => {
   try {
-    if(req.userRole==="admin"){
-  
-    console.log("hhhh");
-    const roles = await Role.find({ name: { $in: ["member", "professional"] } });
-    const roleIds = roles.map((role) => role._id);
-    console.log("hhhh");
-    const users = await User.find({ role: { $in: roleIds } });
-    console.log("hhhh");
-    const categorizedUsers = {
-      member: [],
-      professional: [],
-    };
+    if (req.userRole === "admin") {
+      const roles = await Role.find({ name: { $in: ["member", "professional"] } });
+      const roleIds = roles.map((role) => role._id);
 
-    users.forEach((user) => {
-      if (user.role.toString() === roles[0]._id.toString()) {
-        categorizedUsers.member.push(user);
-      } else if (user.role.toString() === roles[1]._id.toString()) {
-        categorizedUsers.professional.push(user);
-      }
-    });
+      const users = await User.find({ role: { $in: roleIds } }).populate("bracelets");
 
-    const response = {
-      member: categorizedUsers.member,
-      professional: categorizedUsers.professional,
-    };
+      const categorizedUsers = {
+        member: [],
+        professional: [],
+      };
 
-    res.json(response);
-  
+      let memberCount = 1;
+      let professionalCount = 1;
+      let status1="";
+      users.forEach((user) => {
+        if(user.status==="true"){
+          status1="active"
+        }else{
+          status1="inactive"
+
+        }
+        const formattedUser = {
+          id: user.role.toString() === roles[0]._id.toString() ? memberCount++ : professionalCount++,
+          firstname: user.firstName,
+          lastname: user.lastName,
+          img: user.image,
+          email: user.email,
+          statusaccount: status1,
+        };
+
+        if (user.role.toString() === roles[0]._id.toString()) {
+          if(user.bracelets[0].is_disabled){
+            formattedUser.statusbraclet="inactive"
+          }else{
+            formattedUser.statusbraclet="active"
+          }
+          categorizedUsers.member.push(formattedUser);
+        } else if (user.role.toString() === roles[1]._id.toString()) {
+          formattedUser.endcontract = "4/6/2024";
+          categorizedUsers.professional.push(formattedUser);
+        }
+      });
+
+      res.json(categorizedUsers);
     }
     if(req.userRole==="professional"){
       
@@ -301,9 +326,8 @@ exports.signinMember = async (req, res,io) => {
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
-  const user = await User.findById(existingUser._id).populate('role').populate('bracelets')
-    .populate('children').exec();
-  await emitToUser(existingUser._id,'user_info',user,io)
+  
+  await emitToUser(existingUser._id,'user_info',io)
   res.status(200).json({ token });
 };
 
@@ -486,82 +510,107 @@ exports.SignupMember = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-exports.getPaymentStatisticsByCategory = async (req, res) => {
+exports.getAmountByCategory = async (req, res) => {
+  const { braceletId } = req.body;
   try {
-    const { userId } = req.body;
+    // Fetch all categories
+    const categories = await Category.find();
 
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth();
-
-    const categories = await Category.find(); // Get all categories
-    const userStatistics = [];
-
-    for (const category of categories) {
-      const operations = await Operation.aggregate([
-        {
-          $match: {
-            userId,
-            approved: true,
-            type: "payment",
-            date: {
-              $gte: new Date(currentYear, currentMonth, 1), // Start of the current month
-              $lt: new Date(currentYear, currentMonth + 1, 1), // Start of the next month
-            },
+    const operations = await Operation.aggregate([
+      {
+        $match: {
+          approved: true,
+          bracelet: mongoose.Types.ObjectId(braceletId),
+        },
+      },
+      {
+        $lookup: {
+          from: "operationlines",
+          localField: "_id",
+          foreignField: "operation",
+          as: "operationLines",
+        },
+      },
+      {
+        $unwind: "$operationLines",
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "operationLines.product",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      {
+        $unwind: "$product",
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "product.category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $unwind: "$category",
+      },
+      {
+        $group: {
+          _id: "$category._id",
+          category: { $first: "$category.name" },
+          totalAmount: {
+            $sum: { $multiply: ["$operationLines.cost", "$operationLines.quantity"] },
           },
         },
-        {
-          $lookup: {
-            from: "operationLines",
-            localField: "_id",
-            foreignField: "operation",
-            as: "operationLines",
-          },
+      },
+      {
+        $project: {
+          _id: 1,
+          category: 1,
+          totalAmount: 1,
         },
-        {
-          $unwind: "$operationLines",
-        },
-        {
-          $lookup: {
-            from: "category",
-            localField: "operationLines.category",
-            foreignField: "_id",
-            as: "category",
-          },
-        },
-        {
-          $match: {
-            "category.name": category.name,
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalAmount: { $sum: "$operationLines.amount" },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            category: category.name,
-            year: currentYear,
-            month: currentMonth + 1,
-            totalAmount: 1,
-          },
-        },
-      ]);
+      },
+    ]);
 
-      const categoryStatistics = operations[0] || { totalAmount: 0 };
+    // Create a map to store the total spending for each category
+    const categoryMap = new Map();
 
-      userStatistics.push(categoryStatistics);
-    }
+    // Initialize the category map with zero spending for each category
+    categories.forEach((category) => {
+      categoryMap.set(category._id.toString(), {
+        category: category.name,
+        totalAmount: 0,
+      });
+    });
 
-    res.json(userStatistics);
+    // Calculate the total spending for each category from the operations data
+    operations.forEach((operation) => {
+      console.log(operation)
+      const categoryId = operation._id.toString();
+      const totalAmount = operation.totalAmount;
+
+      if (categoryMap.has(categoryId)) {
+        const categoryData = categoryMap.get(categoryId);
+        categoryData.totalAmount += totalAmount;
+        categoryMap.set(categoryId, categoryData);
+      }
+    });
+
+    // Convert the map values to an array
+    const categorySpending = Array.from(categoryMap.values());
+
+    res.json(categorySpending);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+
+
 
 
 exports.transfer = async (req, res) => {
@@ -605,6 +654,14 @@ exports.transfer = async (req, res) => {
           await operation.save();
 
           const receiverUser = await User.findById(child._id);
+          const senderUser = await User.findById(req.userId);
+
+          receiverBracelet.operations.push(operation);
+          senderBracelet.operations.push(operation);
+          await receiverBracelet.save();
+          await senderBracelet.save();
+          await receiverUser.save();
+          await senderUser.save();
 
           res.json({
             message: 'Transfer successful',
@@ -660,6 +717,15 @@ exports.transfer = async (req, res) => {
             await operation.save();
 
             const receiverUser = await User.findById(receiverChild._id);
+            const senderUser = await User.findById(req.userId);
+
+            receiverBracelet.operations.push(operation);
+            senderBracelet.operations.push(operation);
+            await receiverBracelet.save();
+            await senderBracelet.save();
+
+            await receiverUser.save();
+            await senderUser.save();
 
             res.json({
               message: 'Transfer successful',
@@ -694,6 +760,14 @@ exports.transfer = async (req, res) => {
             await operation.save();
 
             const receiverUser = await User.findById(parent._id);
+            const senderUser = await User.findById(req.userId);
+
+            parentReceiverBracelet.operations.push(operation);
+            senderBracelet.operations.push(operation);
+            await parentReceiverBracelet.save();
+            await senderBracelet.save();
+            await receiverUser.save();
+            await senderUser.save();
 
             res.json({
               message: 'Transfer successful',
@@ -796,17 +870,16 @@ exports.proSignup = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-exports.bloquerbracelet = async (req, res,io) => {
+exports.bloquerbracelet = async (req, res, io) => {
   try {
     const { id_bracelet } = req.body;
 
     if (req.userRole === 'member') {
-      
       const parent = await User.findById(req.userId).populate({
         path: 'children',
         populate: { path: 'bracelets' }
       });
-      console.log(parent)
+
       let foundBracelet = null;
 
       // Check if the bracelet belongs to the parent
@@ -814,20 +887,20 @@ exports.bloquerbracelet = async (req, res,io) => {
         foundBracelet = parent.bracelets[0];
       } else {
         // Check if the bracelet belongs to any of the children
-       
         parent.children.forEach(child => {
           const bracelet = child.bracelets[0];
-        
           if (bracelet._id.toString() === id_bracelet) {
-           
             foundBracelet = bracelet;
           }
         });
       }
 
       if (foundBracelet) {
-        await Bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: !foundBracelet.is_disabled });
-        res.status(200).json({ message: 'Bracelet status updated successfully for member' });
+        const bra = await Bracelet.findById(foundBracelet)
+        bra.is_disabled = !bra.is_disabled; // Update the is_disabled property
+        await bra.save(); // Save the changes
+        console.log(bra.is_disabled)
+        res.status(200).json({ Bracelet: bra.is_disabled, message: 'Bracelet status updated successfully for member' });
       } else {
         res.status(404).json({ message: 'Bracelet not found' });
       }
@@ -835,8 +908,10 @@ exports.bloquerbracelet = async (req, res,io) => {
       const bracelet = await Bracelet.findById(id_bracelet);
 
       if (bracelet) {
-        await bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: !foundBracelet.is_disabled });
-        res.status(200).json({ message: 'Bracelet blocked successfully for admin' });
+        bracelet.is_disabled = !bracelet.is_disabled; // Update the is_disabled property
+        await bracelet.save(); // Save the changes
+
+        res.status(200).json({ Bracelet: bracelet.is_disabled, message: 'Bracelet blocked successfully for admin' });
       } else {
         res.status(404).json({ message: 'Bracelet not found' });
       }
@@ -845,9 +920,10 @@ exports.bloquerbracelet = async (req, res,io) => {
       const bracelet = await Bracelet.findOne({ user: child._id, _id: id_bracelet });
 
       if (bracelet) {
-        await bracelet.updateOne({ _id: foundBracelet._id }, { is_disabled: true });
-        
-        res.status(200).json({ message: 'Bracelet blocked successfully for child' });
+        bracelet.is_disabled = true; // Update the is_disabled property
+        await bracelet.save(); // Save the changes
+
+        res.status(200).json({ Bracelet: bracelet.is_disabled, message: 'Bracelet blocked successfully for child' });
       } else {
         res.status(404).json({ message: 'Bracelet not found for the child' });
       }
@@ -859,5 +935,7 @@ exports.bloquerbracelet = async (req, res,io) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
 
 

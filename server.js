@@ -8,7 +8,7 @@ const path = require('path');
 const multer = require('multer');
 const http = require('http');
 const {Server} = require('socket.io'); 
-
+const jwt = require('jsonwebtoken');
 
 const storage = multer.diskStorage({
   destination: './uploads',
@@ -37,7 +37,9 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server)
 //Routes
+
 app.use(bodyParser.json({limit: '50mb'}));
+
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use("/uploads",express.static("uploads"));
 // Add professional routes
@@ -46,7 +48,7 @@ app.use('/checkout', checkoutRoute(io));
 app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
 app.post('/signupMember', userController.SignupMember);
-app.post('/stat', userController.getPaymentStatisticsByCategory);
+app.post('/stati', userController.getAmountByCategory);
 app.post('/transfer', authMemberChild,userController.transfer);
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
@@ -80,31 +82,51 @@ app.get('/get', function (req, res) {
 io.on('connection', (socket) => {
   
   // When a user logs in or connects
-  socket.on('login', async (userId) => {
-    console.log('temchy socket');
-    
-    // Store the mapping in the database
-    const userSocket = new UserSocket({
-      userId,
-      socketId: socket.id,
-    });
-    console.log(socket.id);
-    userSocket.save();
-    const user = await User.findById(userId).populate('role').populate({
-      path: 'children',
-      populate: { path: 'bracelets' }
-    }).populate({
-      path: 'bracelets',
-      populate: {
-        path: 'operations',
-        populate:  [
-          { path: 'sellingPoint' },
-          { path: 'operationLines', populate: { path: 'product', select: 'name' } }
-        ]
-      }
-    })
-    .exec();
-    io.to(userSocket.socketId).emit('user_info', user);
+  socket.on('login', async (token) => {
+    let error = false; // Declare error as a regular variable
+  
+    try {
+      console.log('temchy socket',token);
+      //const extractedToken = token.split(' ')[1];
+      console.log(process.env.JWT_SECRET)
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.userId;
+      const userRole = decoded.role;
+      console.log(userRole,userId)
+       // Make sure req object is available
+  
+      // Store the mapping in the database
+      const userSocket = new UserSocket({
+        userId,
+        socketId: socket.id,
+      });
+      console.log(socket.id);
+      await userSocket.save(); // Use await to wait for the save operation to complete
+  
+      const user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'children',
+          populate: { path: 'bracelets' },
+        })
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
+  
+      io.to(userSocket.socketId).emit('user_info', user, error);
+    } catch (e) {
+      error = true;
+      console.error(e);
+      io.to(socket.id).emit('user_info', null, error); // Emit error to the socket
+    }
   });
   // When a user disconnects
   socket.on('disconnect', async () => {
@@ -117,20 +139,23 @@ io.on('connection', (socket) => {
   socket.on('get_user_info', async (data) => {
     try {
       console.log("temchy getuser",data)
-      const user = await User.findById(data).populate('role').populate({
-        path: 'children',
-        populate: { path: 'bracelets' }
-      }).populate({
-        path: 'bracelets',
-        populate: {
-          path: 'operations',
-          populate:  [
-            { path: 'sellingPoint' },
-            { path: 'operationLines', populate: { path: 'product', select: 'name' } }
-          ]
-        }
-      })
-      .exec();
+      const user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'children',
+          populate: { path: 'bracelets' },
+        })
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
         console.log("hhh",user.children)
 
       // Emit the user information back to the client
