@@ -97,6 +97,7 @@ exports.createBracelet = async (req, res) => {
     await user.save();
 
     // Return the new bracelet object
+    await emitToUser(user._id,'user_info',io)
     res.status(201).json(newBracelet);
   } catch (error) {
     console.error(error);
@@ -151,6 +152,40 @@ exports.addAmount = async (req, res,io) => {
   await emitToUser(req.userId,'user_info',io)
   res.json(bracelet);
 };
+exports.getUserInfo = async (req, res) => {
+  try {
+    const { idUser } = req.body;
+
+    const user = await User.findById(idUser)
+      .populate({
+        path: 'bracelets',
+        populate: {
+          path: 'operations',
+          options: { sort: { date: -1 }, limit: 5 }
+        }
+      })
+      .populate({
+        path: 'children',
+        populate: {
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            options: { sort: { created_at: -1 }, limit: 5 }
+          }
+        }
+      })
+      .exec();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 exports.GetAllInfoUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate('role').populate('bracelets')
@@ -185,6 +220,7 @@ exports.GetAllUser = async (req, res) => {
 
         }
         const formattedUser = {
+          idUser:user._id,
           id: user.role.toString() === roles[0]._id.toString() ? memberCount++ : professionalCount++,
           firstname: user.firstName,
           lastname: user.lastName,
@@ -217,7 +253,7 @@ exports.GetAllUser = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-exports.removeChildAndTransferBraceletAmount = async (req, res) => {
+exports.removeChildAndTransferBraceletAmount = async (req, res,io) => {
   try {
     const { childId, parentId } = req.body;
 
@@ -247,7 +283,7 @@ exports.removeChildAndTransferBraceletAmount = async (req, res) => {
 
     // Supprimer l'enfant
     await User.findByIdAndDelete(childId);
-
+    await emitToUser(parent._id,'user_info',io)
     res.json({ message: 'Enfant supprimé avec succès, les bracelets ont également été supprimés et le montant du bracelet a été transféré au parent.' });
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'enfant :', error.message);
@@ -364,7 +400,7 @@ exports.verifyEmailExists = async (req, res) => {
 };
 
 
-exports.childSignup = async (req, res) => {
+exports.childSignup = async (req, res,io) => {
   try {
     const { firstName,
       lastName,
@@ -438,7 +474,7 @@ exports.childSignup = async (req, res) => {
     // Add child to parent's children array
     parent.children.push(user._id);
     await parent.save();
-
+    await emitToUser(parent._id,'user_info',io)
     res.status(201).json({userId:user._id, message: "Child user created successfully." });
   } catch (error) {
     console.log('hhhh');
@@ -613,7 +649,7 @@ exports.getAmountByCategory = async (req, res) => {
 
 
 
-exports.transfer = async (req, res) => {
+exports.transfer = async (req, res,io) => {
   const { idSender, idReceiver, amount } = req.body;
 
   try {
@@ -672,6 +708,8 @@ exports.transfer = async (req, res) => {
             firstName: receiverUser.firstName,
             image: receiverUser.image
           });
+          emitToUser(senderUser._id,'user_info',io)
+          emitToUser(receiverUser._id,'user_info',io)
         } else {
           res.status(404).json({ error: 'Bracelet not found' });
         }
@@ -736,6 +774,8 @@ exports.transfer = async (req, res) => {
               firstName: receiverUser.firstName,
               image: receiverUser.image
             });
+            emitToUser(receiverUser._id,'user_info',io)
+            emitToUser(senderUser._id,'user_info',io)
           } else if (parentReceiverBracelet) {
             if (senderBracelet.amount < amount) {
               return res.status(400).json({ error: 'Insufficient balance' });
@@ -768,7 +808,8 @@ exports.transfer = async (req, res) => {
             await senderBracelet.save();
             await receiverUser.save();
             await senderUser.save();
-
+            await emitToUser(senderUser._id,'user_info',io)
+            await emitToUser(receiverUser._id,'user_info',io)
             res.json({
               message: 'Transfer successful',
               receiverBracelet: parentReceiverBracelet._id,

@@ -49,9 +49,16 @@ app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
 app.post('/signupMember', userController.SignupMember);
 app.post('/stati', userController.getAmountByCategory);
-app.post('/transfer', authMemberChild,userController.transfer);
+
+app.post('/transfer', authMemberChild,(req, res) => {
+  userController.transfer(req,res,io)
+});
+app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
+});
+app.post('/deletechild',(req, res) => {
+  userController.removeChildAndTransferBraceletAmount(req,res,io)
 });
 app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
@@ -62,7 +69,10 @@ app.post('/createBracelet',userController.createBracelet)
 app.post('/addAmount',authMember, (req, res) => {
   userController.addAmount(req, res, io);
 })
-app.post('/childSignup',authMember, userController.childSignup);
+app.post('/childSignup',authMember, (req, res) => {
+  userController.childSignup(req, res, io);
+})
+
 app.post('/SignupMember',userController.SignupMember);
 app.post('/adminLogin', userController.adminLogin);
 
