@@ -9,6 +9,7 @@ const chainContoller = require('../controllers/chain');
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
 
 router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
+router.get('/getSellingPoints',professionalController.getSellingPoints);
 router.get('/getChainById/:id',chainContoller.getChainById);
 // Create a new chain
 router.post('/chain',adminMiddleware, professionalController.createChain);

@@ -138,3 +138,14 @@ exports.getSellingPointsByChainId = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+exports.getSellingPoints = async (req, res) => {
+  try {
+    
+    const sellingPoints = await SellingPoint.find()
+
+    res.json(sellingPoints);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
