@@ -64,6 +64,7 @@ app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });
+app.get('/getBraceletAll',userController.getBraceletAll )
 app.get('/GetAllInfoUser',authMember,userController.GetAllInfoUser)
 app.post('/createBracelet',userController.createBracelet)
 app.post('/addAmount',authMember, (req, res) => {

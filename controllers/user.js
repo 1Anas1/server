@@ -1041,6 +1041,16 @@ exports.bloquerbracelet = async (req, res, io) => {
   }
 };
 
+exports.getBraceletAll = async (req, res) => {
+  try {
+    
+    const braceletall = await Bracelet.find().populate({path:"user",populate:{path:"role"}})
 
+    res.json(braceletall);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 
