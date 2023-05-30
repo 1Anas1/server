@@ -92,28 +92,87 @@ app.get('/get', function (req, res) {
 io.on('connection', (socket) => {
   
   // When a user logs in or connects
-  socket.on('login', async (token) => {
-    let error = false; // Declare error as a regular variable
-  
-    try {
-      console.log('temchy socket',token);
-      //const extractedToken = token.split(' ')[1];
-      console.log(process.env.JWT_SECRET)
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const userId = decoded.userId;
-      const userRole = decoded.role;
-      console.log(userRole,userId)
-       // Make sure req object is available
-  
-      // Store the mapping in the database
-      const userSocket = new UserSocket({
-        userId,
-        socketId: socket.id,
-      });
-      console.log(socket.id);
-      await userSocket.save(); // Use await to wait for the save operation to complete
-  
-      const user = await User.findById(userId)
+ // Assuming the user collection model is exported as 'User'
+
+// ...
+
+socket.on('login', async (token) => {
+  let error = false; // Declare error as a regular variable
+
+  try {
+    console.log('temchy socket',token);
+    //const extractedToken = token.split(' ')[1];
+    console.log(process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const userRole = decoded.role;
+    console.log(userRole,userId)
+     // Make sure req object is available
+
+    // Store the mapping in the database
+    const userSocket = new UserSocket({
+      userId,
+      socketId: socket.id,
+    });
+    console.log(socket.id);
+    await userSocket.save(); // Use await to wait for the save operation to complete
+
+    let user;
+    if (userRole === 'child') {
+      // Find the user by their ID and populate parent, children, and bracelets
+      user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'parent',
+          populate: {
+            path: 'bracelets',
+            
+          },
+          populate: {
+            path: 'children',
+            populate: {
+              path: 'bracelets',
+              
+            },
+          },
+          
+        })
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
+
+      if (!user.parent) {
+        throw new Error('Parent not found');
+      }
+
+      // Extract the parent and other children data
+      const { parent, children } = user;
+      const parentWithBracelets = await User.findById(parent._id).populate('bracelets');
+      const otherChildren = parent.children.filter(child => child._id.toString() !== userId);
+      console.log(parentWithBracelets);
+      // Modify the children array with parent information and bracelet details
+      const modifiedChildren = [
+        parentWithBracelets,
+        ...otherChildren.map(child => (
+          child
+        )),
+      ];
+      
+      // Modify the user object with the modified children array
+      user.children = modifiedChildren;
+    
+      io.to(userSocket.socketId).emit('user_info', user, error);
+    } else {
+      // Find the user by their ID and populate role, children, and bracelets
+      user = await User.findById(userId)
         .populate('role')
         .populate({
           path: 'children',
@@ -130,14 +189,16 @@ io.on('connection', (socket) => {
           },
         })
         .exec();
-  
+
       io.to(userSocket.socketId).emit('user_info', user, error);
-    } catch (e) {
-      error = true;
-      console.error(e);
-      io.to(socket.id).emit('user_info', null, error); // Emit error to the socket
     }
-  });
+  } catch (e) {
+    error = true;
+    console.error(e);
+    io.to(socket.id).emit('user_info', null, error); // Emit error to the socket
+  }
+});
+
   // When a user disconnects
   socket.on('disconnect', async () => {
     // Remove the mapping from the database

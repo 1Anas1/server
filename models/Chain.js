@@ -42,7 +42,11 @@ updated_at:{
       sp_id: { type: mongoose.Schema.Types.ObjectId, ref: 'SellingPoint' },
       sp_name: String
     }
-  ]
+  ],
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
     
     
   })

@@ -4,9 +4,12 @@ const professionalController = require('../controllers/professionalController');
 const authMiddleware = require('../middleware/authProfessional');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const userController = require('../controllers/user');
+const chainContoller = require('../controllers/chain');
 
+router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
 
-
+router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
+router.get('/getChainById/:id',chainContoller.getChainById);
 // Create a new chain
 router.post('/chain',adminMiddleware, professionalController.createChain);
 

@@ -1,9 +1,9 @@
-const Chain = require('../models/chain');
+//const Chain = require('../models/chain');
 const SellingPoint = require('../models/sellingPoint');
 const User = require('../models/User');const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Role = require("../models/Role");
-
+const mongoose = require('mongoose');
 exports.createChain = async function(req, res) {
   try {
     // Vérifie si la chaîne existe déjà
@@ -125,3 +125,16 @@ exports.signin = async (req, res,io) => {
   role =existingUser.role.name;
   res.status(200).json({ token, role});
 };
+
+
+exports.getSellingPointsByChainId = async (req, res) => {
+  try {
+    const chainId = req.params.chainId; // Assuming the chain ID is passed as a route parameter
+    const sellingPoints = await SellingPoint.find({ chain_id: chainId });
+
+    res.json(sellingPoints);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
