@@ -51,6 +51,7 @@ app.get('/getUsersByProfessionalRole',userController.getUsersByProfessionalRole)
 app.post('/signupMember', userController.SignupMember);
 app.post('/stati', userController.getAmountByCategory);
 app.get('/getUsersWithoutBracelets',userController.getUsersWithoutBracelets);
+app.get('/getProfessionalUsers',userController.getProfessionalUsers);
 app.post('/createBraceletAdmin',userController.createBraceletAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)

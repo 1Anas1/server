@@ -11,6 +11,7 @@ router.post('/createChain',chainContoller.createChain);
 router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
 router.get('/getSellingPoints',professionalController.getSellingPoints);
 router.get('/getChainById/:id',chainContoller.getChainById);
+router.get('/getChains',chainContoller.getChains);
 // Create a new chain
 router.post('/chain',adminMiddleware, professionalController.createChain);
 

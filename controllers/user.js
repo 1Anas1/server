@@ -434,7 +434,19 @@ exports.removeChildAndTransferBraceletAmount = async (req, res,io) => {
 
 
 
+exports.getProfessionalUsers = async (req, res, next) => {
+  try {
+      const professionalRole = await Role.findOne({ name: "professional" });
+      if (!professionalRole) {
+          return res.status(404).json({ message: 'Role not found' });
+      }
 
+      const users = await User.find({ role: professionalRole._id }).select('_id email').exec();
+      res.status(200).json(users);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
 
 
 exports.signinMember = async (req, res,io) => {

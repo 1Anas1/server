@@ -133,12 +133,22 @@ const getChainById = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
+
+};
+const getChains = async (req, res) => {
+  try {
+    const chains = await Chain.find({}, 'chain_name'); // This will only return the _id and chain_name of each document
+    res.status(200).json(chains);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get chains', error });
+  }
 };
 
 module.exports = {
   createChain,
   getAllChains,
   getChainById,
-  editChain
+  editChain,
+  getChains
 };
 
