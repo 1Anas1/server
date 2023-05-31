@@ -1,4 +1,4 @@
-//const Chain = require('../models/chain');
+const Chain = require('../models/Chain');
 const SellingPoint = require('../models/sellingPoint');
 const User = require('../models/User');const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -43,57 +43,92 @@ exports.createChain = async function(req, res) {
   }
 };
 
-exports.createSellingPoint = async function(req, res) {
+exports.createSellingPoint = async (req, res) => {
+  const {
+    name_shop,
+    email,
+    phone_number,
+    location,
+    status_shop,
+    owner,
+    chain,
+    position,
+  } = req.body;
+
+  // Check if all required fields are provided
+  if (
+    !name_shop ||
+    !email ||
+    !phone_number ||
+    !location ||
+    !status_shop ||
+    !owner ||
+    !chain ||
+    !position ||
+    !position.lat ||
+    !position.lng
+  ) {
+    return res.status(400).json({ message: "All fields must be filled out" });
+  }
+
+  const emailRegex = /^\S+@\S+\.\S+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Email is not valid" });
+  }
+
+  // Create a new SellingPoint
+  const sellingPoint = new SellingPoint({
+    sp_name: name_shop,
+    sp_email: email,
+    sp_phone: phone_number,
+    sp_address: location,
+    payment_requirement: status_shop,
+    owner: owner,
+    location: {
+      type: "Point",
+      coordinates: [position.lng, position.lat], // longitude should be first in GeoJSON
+    },
+    chain_id: chain,
+  });
+ console.log(sellingPoint)
   try {
-    // Vérifie si le point de vente existe déjà
-    const existingSellingPoint = await SellingPoint.findOne({ sp_name: req.body.sp_name });
-    if (existingSellingPoint) {
-
-        return res.status(400).send('Selling point already exists.');
-    }
-
-    // Crée le nouveau point de vente
-    const sellingPoint = new SellingPoint({
-      sp_name: req.body.sp_name,
-      sp_email: req.body.sp_email,
-      sp_address: req.body.sp_address,
-      sp_latitude: req.body.sp_latitude,
-      sp_longitude: req.body.sp_longitude,
-      sp_image: req.body.sp_image,
-      sp_phone: req.body.sp_phone,
-      payment_requirement: req.body.payment_requirement,
-      end_contract: req.body.end_contract,
-      chain_id: req.body.chain_id
+    const savedSellingPoint = await sellingPoint.save();
+    console.log(1);
+    // Find the chain and add the new SellingPoint
+    const foundChain = await Chain.findById(chain);
+    if (!foundChain) {
+      return res.status(404).json({ message: "Chain not found" });
+    }console.log(12);
+    foundChain.selling_points.push({
+      sp_id: savedSellingPoint._id,
+      sp_name: savedSellingPoint.sp_name,
     });
-    
-    const existingChain = await Chain.findById( req.body.chain_id );
-    if (!existingChain) {
-      return res.status(400).send('Chain not exists.');
+    await foundChain.save();
+    console.log(3);
+    // Find the user and add the new SellingPoint
+    const foundUser = await User.findById(owner);
+    if (!foundUser) {
+      return res.status(404).json({ message: "User not found" });
     }
-    await sellingPoint.save();
-    // Ajoute l'utilisateur en tant que propriétaire du point de vente
-    existingChain.selling_points.push(req.body.chain_id);
+    foundUser.selling_points.push(savedSellingPoint._id);
+    await foundUser.save();
 
-    // Sauvegarde le point de vente dans la base de données
-   
-    await existingChain.save();
-    const existingUser = await User.findById(req.body.owner_id);
-    
-    if (!existingUser) {
-      return res.status(400).send('User not exists.');
+    // Find the owner of the chain and add the owner of the selling point as a child
+    const chainOwner = await User.findById(foundChain.owner);
+    if (!chainOwner) {
+      return res.status(404).json({ message: "Chain owner not found" });
     }
-    
-    // Ajoute l'utilisateur en tant que propriétaire de la chaîne
-    existingUser.selling_points.push(existingChain._id);
-    await existingUser.save();
-    
+    chainOwner.children.push(owner);
+    await chainOwner.save();
 
-    res.status(200).send(sellingPoint);
-  } catch (ex) {
-    console.log(ex);
-    res.status(500).send('An error occurred while creating the selling point.');
+    res.status(201).json(savedSellingPoint);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
+
+
+
 
 //sign in admin et pro
 exports.signin = async (req, res,io) => {

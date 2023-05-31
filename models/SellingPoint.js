@@ -19,6 +19,7 @@ const sellingPointSchema = new mongoose.Schema({
   sp_phone: String,
   payment_requirement: String,
   end_contract: Date,
+  owner: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
   chain_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chain' },
 });
 

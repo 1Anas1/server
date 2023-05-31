@@ -12,6 +12,7 @@ router.get('/getSellingPointsByChainId/:chainId',professionalController.getSelli
 router.get('/getSellingPoints',professionalController.getSellingPoints);
 router.get('/getChainById/:id',chainContoller.getChainById);
 router.get('/getChains',chainContoller.getChains);
+router.put('/editChain',chainContoller.editChain);
 // Create a new chain
 router.post('/chain',adminMiddleware, professionalController.createChain);
 

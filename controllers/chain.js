@@ -59,13 +59,9 @@ const createChain = async (req, res) => {
 
 const editChain = async (req, res) => {
   try {
-    const { chain_id, chain_name, chain_image, ownerId } = req.body;
+    const { chain_id, chain_name, chain_image } = req.body;
 
-    // Verify that the current user has a professional account
-    const currentUser = await User.findById(ownerId);
-    if (currentUser.role.name !== 'admin') {
-      return res.status(401).json({ error: 'You must have a professional account to edit a chain' });
-    }
+   
 
     // Find the existing chain by ID
     const chain = await Chain.findById(chain_id);
