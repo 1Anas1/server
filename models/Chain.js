@@ -8,11 +8,11 @@ const chain = new mongoose.Schema({
   },
 chain_email :{
     type: String,
-    required: true,
+    required: false,
   },
 chain_adresse:{
     type: String,
-    required: true,
+    required: false,
   },
 chain_image:{
     type: String,
@@ -20,7 +20,7 @@ chain_image:{
   },
  chain_phone:{
     type: String,
-    required: true,
+    required: false,
   },
 status:{
     type: String,

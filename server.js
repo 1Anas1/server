@@ -47,6 +47,7 @@ app.use('/api/professional', professionalRoutes);
 app.use('/checkout', checkoutRoute(io));
 app.post('/logout', userController.logout);
 app.post('/verifyEmailExists',userController.verifyEmailExists);
+app.get('/getUsersByProfessionalRole',userController.getUsersByProfessionalRole);
 app.post('/signupMember', userController.SignupMember);
 app.post('/stati', userController.getAmountByCategory);
 
@@ -66,7 +67,11 @@ app.post('/signinMember',(req, res) => {
 });
 app.get('/getBraceletAll',userController.getBraceletAll )
 app.get('/GetAllInfoUser',authMember,userController.GetAllInfoUser)
-app.post('/createBracelet',userController.createBracelet)
+app.get('/getUserStatistics',userController.getUserStatistics)
+
+app.post('/createBracelet', (req, res) => {
+  userController.createBracelet(req, res, io);
+})
 app.post('/addAmount',authMember, (req, res) => {
   userController.addAmount(req, res, io);
 })

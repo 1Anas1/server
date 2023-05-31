@@ -6,6 +6,7 @@ const OperationLine = require('../models/OperationLine');
 const Bracelet = require('../models/Bracelet');
 const UserSocket =require('../models/UserSocket');
 const User = require("../models/User");
+const { populate } = require('../models/Budget');
 
 //--------------------------socket-----------------------/
 
@@ -183,7 +184,56 @@ const payment = async (req, res,io) => {
   }
 }
 
+//---------------------Operation with pagination--------/
+const getOperations = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    const userId = req.userId; // Assuming req.userId contains the ID of the user
 
+    // Add a condition to find the user with a specific condition
+    const user = await User.findOne({ _id: userId }).populate('bracelets');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const pageNumber = parseInt(page, 10) || 1;
+    const pageSize = parseInt(limit, 10) || 10;
+
+    const skipCount = (pageNumber - 1) * pageSize;
+
+    const operations = await Operation.find({
+      $or: [
+        { bracelet: user.bracelets[0]._id },
+        { braceletReceiver: user.bracelets[0]._id }
+      ]
+    }).populate({ path: 'sellingPoint', populate: { path: 'chain_id' } })
+      .populate({ path: 'operationLines', populate: { path: 'product' } })
+      .populate({ path: 'bracelet', populate: { path: 'user' } })
+      .populate({ path: 'braceletReceiver', populate: { path: 'user' } })
+      .sort({ date: -1 })
+      .skip(skipCount)
+      .limit(pageSize);
+
+    // Iterate over the operations and update the type if the condition is met
+    operations.forEach((operation) => {
+      if (String(operation.braceletReceiver._id) === String(user.bracelets[0]._id)) {
+        operation.type = 'receive';
+      }
+    });
+
+    res.status(200).json(operations);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
+
+
+//------------------------------------------------------/
 
 
 //------------------------------------------------------/
@@ -225,5 +275,6 @@ module.exports = {
   addFamily,
   addCategory,
   payment,
-  addProduct
+  addProduct,
+  getOperations
 };

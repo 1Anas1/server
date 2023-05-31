@@ -134,7 +134,7 @@ const createDefaultRoles = async () => {
   }
 };
 
-exports.createBracelet = async (req, res) => {
+exports.createBracelet = async (req, res,io) => {
   try {
     const { type,color,delivery_method,payment_method,userId } = req.body;
 
@@ -1053,4 +1053,53 @@ exports.getBraceletAll = async (req, res) => {
   }
 }
 
+exports.getUserStatistics = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const memberUsers = await User.aggregate([
+      { $lookup: { from: 'roles', localField: 'role', foreignField: '_id', as: 'role' } },
+      { $match: { 'role.name': 'member' } },
+      { $count: 'count' }
+    ]);
+    
+    const professionalUsers = await User.aggregate([
+      { $lookup: { from: 'roles', localField: 'role', foreignField: '_id', as: 'role' } },
+      { $match: { 'role.name': 'professional' } },
+      { $count: 'count' }
+    ]);
+    const totalBracelets = await Bracelet.countDocuments();
 
+    const memberCount = memberUsers.length > 0 ? memberUsers[0].count : 0;
+    const professionalCount = professionalUsers.length > 0 ? professionalUsers[0].count : 0;
+    res.json({
+      totalUsers,
+      memberCount,
+      professionalCount,
+      totalBracelets,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.getUsersByProfessionalRole = async (req, res) => {
+  try {
+    const users = await User.find({})
+  .populate({
+    path: 'role',
+    match: { name: { $eq: 'professional' } },
+    select: '_id name' // Select the desired fields from the role document
+  })
+  .select('_id firstName lastName')
+  .exec();
+
+const filteredUsers = users.filter(user => user.role !== null);
+res.json(filteredUsers);
+
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
