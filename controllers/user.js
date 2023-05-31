@@ -1225,3 +1225,63 @@ res.json(filteredUsers);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+exports.editUser = async (req, res) => {
+  try {
+    const { userId, firstName, lastName, email, phone, birthDate, image, statusbracelet, status } = req.body;
+
+    // Verify that the current user has an admin role
+    const currentUser = await User.findById(req.userId);
+    if (currentUser.role.name !== 'admin') {
+      return res.status(401).json({ error: 'You must be an admin to edit a user' });
+    }
+
+    // Find the existing user by ID
+    const user = await User.findById(userId).populate("bracelets");
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update the user properties
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.email = email;
+    user.phone = phone;
+    user.birthDate = birthDate;
+    user.status = status;
+    user.updated_at = Date.now();
+
+    // Check if there is a new user image provided
+    if (image) {
+      // Decode the base64 image and save it to the "uploads" folder
+      const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+      const fileExtension = matches[1];
+      const base64Data = matches[2];
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      const imageName = `${Date.now()}.${fileExtension}`; // Generate a unique name with the correct file extension
+      const imagePath = path.join(__dirname, '../uploads', imageName);
+      fs.writeFileSync(imagePath, imageBuffer);
+
+      // Update the user image
+      user.image = imageName;
+    }
+
+    // Find the bracelet to update
+    const bracelet = await Bracelet.findById(user.bracelets[0]);
+    if (!bracelet) {
+      return res.status(404).json({ error: 'Bracelet not found' });
+    }
+
+    // Update the bracelet status and save it
+    bracelet.status = statusbracelet;
+    await bracelet.save();
+
+    // Save the updated user
+    await user.save();
+
+    res.json({ message: 'User updated successfully', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

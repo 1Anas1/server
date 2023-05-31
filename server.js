@@ -56,6 +56,7 @@ app.post('/createBraceletAdmin',userController.createBraceletAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)
 });
+app.put('/editUser',adminMiddleware,userController.editUser)
 app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
