@@ -50,7 +50,8 @@ app.post('/verifyEmailExists',userController.verifyEmailExists);
 app.get('/getUsersByProfessionalRole',userController.getUsersByProfessionalRole);
 app.post('/signupMember', userController.SignupMember);
 app.post('/stati', userController.getAmountByCategory);
-
+app.get('/getUsersWithoutBracelets',userController.getUsersWithoutBracelets);
+app.post('/createBraceletAdmin',userController.createBraceletAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)
 });
@@ -80,6 +81,7 @@ app.post('/childSignup',authMember, (req, res) => {
 })
 
 app.post('/SignupMember',userController.SignupMember);
+app.post('/SignupMemberAdmin',userController.SignupMemberAdmin)
 app.post('/adminLogin', userController.adminLogin);
 
 app.post('/pro/signup', userController.proSignup);

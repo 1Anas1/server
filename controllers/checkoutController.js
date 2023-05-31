@@ -217,9 +217,11 @@ const getOperations = async (req, res) => {
 
     // Iterate over the operations and update the type if the condition is met
     operations.forEach((operation) => {
+      if(operation.braceletReceiver){
+        console.log(operation.braceletReceiver,'receiver')
       if (String(operation.braceletReceiver._id) === String(user.bracelets[0]._id)) {
         operation.type = 'receive';
-      }
+      }}
     });
 
     res.status(200).json(operations);

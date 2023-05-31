@@ -168,7 +168,41 @@ exports.createBracelet = async (req, res,io) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+exports.createBraceletAdmin = async (req, res) => {
+  try {
+    const { type,color,userId } = req.body;
 
+    // Create the new bracelet
+    const newBracelet = new Bracelet({
+      type,
+      color,
+      delivery_method:"poslik office",
+      payment_method:"cash on delivery",
+      amount: 0.00,
+      is_disabled: false,
+      max_amount:1000,
+      duration:30*12,
+      user: userId
+    });
+
+    // Save the new bracelet to the database
+    console.log('1')
+    await newBracelet.save();
+
+    // Add the new bracelet to the user's bracelet array
+    const user = await User.findById(userId);
+    user.bracelets.push(newBracelet._id);
+    user.status="true";
+    await user.save();
+
+    // Return the new bracelet object
+    
+    res.status(201).json(newBracelet);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 exports.addLimits = async (req,res,io) =>{
   try {
@@ -294,10 +328,13 @@ exports.GetAllUser = async (req, res) => {
         };
 
         if (user.role.toString() === roles[0]._id.toString()) {
+          if(user.bracelets[0]){
           if(user.bracelets[0].is_disabled){
             formattedUser.statusbraclet="inactive"
           }else{
             formattedUser.statusbraclet="active"
+          }}else{
+            formattedUser.statusbraclet="inactive"
           }
           categorizedUsers.member.push(formattedUser);
         } else if (user.role.toString() === roles[1]._id.toString()) {
@@ -419,6 +456,10 @@ exports.signinMember = async (req, res,io) => {
   if (!passwordMatch) {
     return res.status(401).json({ message: "Incorrect password" });
   }
+  if(existingUser.status!=="true"){
+    return res.status(401).json({ message: "compte desactive" });
+  }
+  
 
   // Generate JWT token with user ID and role
   const token = jwt.sign(
@@ -432,6 +473,15 @@ exports.signinMember = async (req, res,io) => {
 };
 
 
+exports.getUsersWithoutBracelets = async (req, res) => {
+  try {
+    const role = await Role.findOne({ name: { $in: ['child', 'member'] } });
+    const users = await User.find({ bracelets: [], role: role._id }, 'email _id');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving users without bracelets' });
+  }
+};
 
 
 exports.logout = (req, res) => {
@@ -549,10 +599,67 @@ exports.childSignup = async (req, res,io) => {
 
 exports.SignupMember = async (req, res) => {
   try {
+    const { firstName, lastName, email, password, image } = req.body;
+
+    // Create child role if it doesn't exist
+    let childRole = await Role.findOne({ name: "member" });
+    if (!childRole) {
+      childRole = new Role({
+        name: "member",
+      });
+      await childRole.save();
+    }
+    childRoleId = childRole._id;
+
+    // Check if child user already exists
+    const existingUser = await User.findOne({ email }).populate({
+      path: "role",
+      match: { $or: [{ name: "member" }, { name: "child" }] },
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create child user
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      status: true,
+      role: childRoleId,
+    });
+    // Decode and save the image
+    const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const decodedImage = Buffer.from(image, 'base64');
+    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, decodedImage);
+
+    // Store the image URI in the user model
+    user.image = imageName;
+
+    await user.save();
+
+    res.status(201).json({ userId: user._id, message: "Child user created successfully." });
+  } catch (error) {
+    console.log(error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.SignupMemberAdmin = async (req, res) => {
+  try {
     const { firstName,
       lastName,
       email,
       password,
+      phone,
+      birthDate,
+      gender,
+      status,
     image} = req.body;
 
     
@@ -584,7 +691,10 @@ exports.SignupMember = async (req, res) => {
       lastName,
       email,
       password:hashedPassword,
-      status: true,
+      status,
+      phone,
+      birthDate,
+      gender,
       role: childRoleId,
     });
     // Decode and save the image
