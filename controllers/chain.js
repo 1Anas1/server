@@ -123,7 +123,7 @@ const getChainById = async (req, res) => {
     const { id } = req.params;
 
     // Verify that the chain exists
-    const chain = await Chain.findById(id).populate('selling_points');
+    const chain = await Chain.findById(id).populate('selling_points').populate('owner');
     if (!chain) {
       return res.status(404).json({ error: 'Chain not found' });
     }
