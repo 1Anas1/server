@@ -6,17 +6,19 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 const userController = require('../controllers/user');
 const chainContoller = require('../controllers/chain');
 
+
+router.get('getSellingPointInfo',professionalController.getSellingPointInfo);
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
 router.post('/createChain',chainContoller.createChain);
 router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
 router.get('/getSellingPoints',professionalController.getSellingPoints);
 router.get('/getChainById/:id',chainContoller.getChainById);
 router.get('/getChains',chainContoller.getChains);
-router.put('/editChain',chainContoller.editChain);
 // Create a new chain
 router.post('/chain',adminMiddleware, professionalController.createChain);
 
 // Create a new selling point
+router.post('/signin', professionalController.signin);
 router.post('/selling-point',adminMiddleware, professionalController.createSellingPoint);
 router.post('/signin', professionalController.signin);
 router.get('/getAllUser',authMiddleware.checkProfessionalAccount, userController.GetAllUser);

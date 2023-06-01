@@ -184,3 +184,31 @@ exports.getSellingPoints = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+exports.getSellingPointInfo = async (req, res) => {
+  const { id } = req.params; // Assuming you're passing the ID in the URL
+
+  // Find the selling point with the provided ID
+  try {
+    const sellingPoint = await SellingPoint.findById(id);
+    if (!sellingPoint) {
+      return res.status(404).json({ message: "Selling point not found" });
+    }
+
+    // If the selling point exists, return its data
+    res.status(200).json({
+      name_shop: sellingPoint.sp_name,
+      email: sellingPoint.sp_email,
+      phone_number: sellingPoint.sp_phone,
+      location: sellingPoint.sp_address,
+      status_shop: sellingPoint.payment_requirement,
+      owner: sellingPoint.owner,
+      chain: sellingPoint.chain_id,
+      position: {
+        lat: sellingPoint.location.coordinates[1],
+        lng: sellingPoint.location.coordinates[0],
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
