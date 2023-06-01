@@ -88,8 +88,15 @@ async function emitToUser(userId, event, io) {
         .populate('role')
         .populate({
           path: 'children',
-          populate: { path: 'bracelets' },
-        })
+          populate: { path: 'bracelets',
+          populate:{
+            path:'restriction',
+            populate:[
+              {path:'restrictedshop'},
+              {path:'restrictedProducts'}
+            ],
+        },
+        }})
         .populate({
           path: 'bracelets',
           populate: {
@@ -1231,11 +1238,6 @@ exports.editUser = async (req, res) => {
     const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
     } = req.body;
 
-    // Verify that the current user has an admin role
-    const currentUser = await User.findById(req.userId);
-    if (currentUser.role.name !== 'admin') {
-      return res.status(401).json({ error: 'You must be an admin to edit a user' });
-    }
 
     // Find the existing user by ID
     const user = await User.findById(userId).populate("bracelets");

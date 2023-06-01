@@ -52,6 +52,10 @@ const braceletSchema = new Schema({
   operations:[{
     type: Schema.Types.ObjectId,
     ref: 'Operation',
+  }],
+  restriction:[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Limits',
   }]
 });
 

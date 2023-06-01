@@ -6,6 +6,7 @@ const OperationLine = require('../models/OperationLine');
 const Bracelet = require('../models/Bracelet');
 const UserSocket =require('../models/UserSocket');
 const User = require("../models/User");
+const Chain = require("../models/Chain")
 const { populate } = require('../models/Budget');
 
 //--------------------------socket-----------------------/
@@ -233,6 +234,45 @@ const getOperations = async (req, res) => {
 
 
 
+//----------------------createLimits--------------------/
+const createBraceletLimit = async (req, res) => {
+  
+  // Extract the limit details from request body
+  const { restrictedshop, restrictedProducts,braceletId } = req.body;
+
+  // Find the bracelet by id
+  const bracelet = await Bracelet.findById(braceletId);
+  if (!bracelet) {
+      return res.status(404).send({ message: "Bracelet not found" });
+  }
+
+  // Find the shop by id
+  const chain = await Chain.findById(restrictedshop);
+  if (!chain) {
+      return res.status(404).send({ message: "Shop not found" });
+  }
+
+  // Create new limit
+  const limit = new Limits({
+      bracelet: braceletId,
+      restrictedshop,
+      restrictedProducts,
+  });
+
+  // Save the new limit
+  await limit.save();
+
+  // Add the limit to the bracelet
+  bracelet.restriction.push(limit._id);
+
+  // Save the updated bracelet
+  await bracelet.save();
+
+  return res.status(200).send({ message: "Limit added successfully", limit });
+};
+
+
+
 
 
 //------------------------------------------------------/
@@ -278,5 +318,6 @@ module.exports = {
   addCategory,
   payment,
   addProduct,
-  getOperations
+  getOperations,
+  createBraceletLimit
 };

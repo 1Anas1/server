@@ -186,8 +186,15 @@ socket.on('login', async (token) => {
         .populate('role')
         .populate({
           path: 'children',
-          populate: { path: 'bracelets' },
-        })
+          populate: { path: 'bracelets',
+          populate:{
+            path:'restriction',
+            populate:[
+              {path:'restrictedshop'},
+              {path:'restrictedProducts'}
+            ],
+        },
+        }})
         .populate({
           path: 'bracelets',
           populate: {

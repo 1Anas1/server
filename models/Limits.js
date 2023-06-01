@@ -6,18 +6,12 @@ const limitsSchema = new mongoose.Schema({
     ref: 'Bracelet',
     required: true,
   },
+  restrictedshop:{type: mongoose.Schema.Types.ObjectId,
+    ref: 'Chain',},
   restrictedProducts: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
-  }],
-  restrictedFamilies: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Family',
-  }],
-  restrictedCategories: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-  }],
+  }]
 });
 
 module.exports = mongoose.model('Limits', limitsSchema);

@@ -24,5 +24,5 @@ router.post('/product', checkoutController.addProduct);
   
     return router;
   };
-  
+router.post('/createBraceletLimit', checkoutController.createBraceletLimit)
   module.exports = checkoutRoute;
