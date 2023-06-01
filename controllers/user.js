@@ -1228,7 +1228,8 @@ res.json(filteredUsers);
 
 exports.editUser = async (req, res) => {
   try {
-    const { userId, firstName, lastName, email, phone, birthDate, image, statusbracelet, status } = req.body;
+    const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
+    } = req.body;
 
     // Verify that the current user has an admin role
     const currentUser = await User.findById(req.userId);
@@ -1248,7 +1249,6 @@ exports.editUser = async (req, res) => {
     user.email = email;
     user.phone = phone;
     user.birthDate = birthDate;
-    user.status = status;
     user.updated_at = Date.now();
 
     // Check if there is a new user image provided
@@ -1273,7 +1273,12 @@ exports.editUser = async (req, res) => {
     }
 
     // Update the bracelet status and save it
-    bracelet.status = statusbracelet;
+    if(is_disabled==="false"){
+      bracelet.is_disabled = false;
+    }
+    if(is_disabled==="true"){
+      bracelet.is_disabled = true;
+    }
     await bracelet.save();
 
     // Save the updated user
