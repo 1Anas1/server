@@ -11,6 +11,7 @@ router.get('/getSellingPointInfo/:id',professionalController.getSellingPointInfo
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
 router.post('/createChain',chainContoller.createChain);
 router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
+router.put('/editShop',professionalController.editShop);
 router.get('/getSellingPoints',professionalController.getSellingPoints);
 router.get('/getChainById/:id',chainContoller.getChainById);
 router.get('/getChains',chainContoller.getChains);
