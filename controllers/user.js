@@ -1272,10 +1272,7 @@ exports.editUser = async (req, res) => {
     if(is_disabled==="false" || is_disabled==="true"){
       const bracelet = await Bracelet.findById(user.bracelets[0]);
     if (bracelet) {
-      return res.status(404).json({ error: 'Bracelet not found' });
-    }
-
-    // Update the bracelet status and save it
+      // Update the bracelet status and save it
     if(is_disabled==="false"){
       bracelet.is_disabled = false;
     }
@@ -1283,6 +1280,9 @@ exports.editUser = async (req, res) => {
       bracelet.is_disabled = true;
     }
     await bracelet.save();
+    }
+
+    
     }
     
 
