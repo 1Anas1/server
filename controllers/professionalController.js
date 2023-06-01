@@ -212,3 +212,36 @@ exports.getSellingPointInfo = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.editShop = async (req, res) => {
+  try {
+    const { id, name_shop, email, phone_number, location, status_shop, owner, chain, position } = req.body;
+
+    // Find the existing shop by ID
+    const shop = await SellingPoint.findById(id);
+    if (!shop) {
+      return res.status(404).json({ error: 'Shop not found' });
+    }
+
+    // Update the shop properties
+    shop.sp_name = name_shop;
+    shop.sp_email = email;
+    shop.sp_phone = phone_number;
+    shop.sp_address = location;
+    shop.payment_requirement = status_shop;
+    shop.owner = owner;
+    shop.chain_id = chain;
+    shop.location.coordinates = [position.lng, position.lat];
+
+    // Update the update_at property
+    shop.updated_at = Date.now();
+
+    // Save the updated shop
+    await shop.save();
+
+    res.json({ message: 'Shop updated successfully', shop });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
