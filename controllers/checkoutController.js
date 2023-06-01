@@ -270,7 +270,37 @@ const createBraceletLimit = async (req, res) => {
 
   return res.status(200).send({ message: "Limit added successfully", limit });
 };
+const getChainsAndProducts = async (req, res) => {
+  try {
+    // Get all chains
+    const chains = await Chain.find().select('_id chain_name chain_image');
 
+    // Get all products
+    const productsData = await Product.find().populate('category', 'name');
+
+    // Group products by type
+    let products = {};
+    for (let product of productsData) {
+      let productType = product.category.name;
+      if (!products[productType]) {
+        products[productType] = [];
+      }
+      products[productType].push({id:product._id, name:product.name});
+      
+    }
+
+    // Form the response
+    const result = {
+      chains,
+      products
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
 
 
 
@@ -319,5 +349,6 @@ module.exports = {
   payment,
   addProduct,
   getOperations,
-  createBraceletLimit
+  createBraceletLimit,
+  getChainsAndProducts
 };
