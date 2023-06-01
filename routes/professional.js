@@ -7,7 +7,7 @@ const userController = require('../controllers/user');
 const chainContoller = require('../controllers/chain');
 
 
-router.get('getSellingPointInfo',professionalController.getSellingPointInfo);
+router.get('/getSellingPointInfo/:id',professionalController.getSellingPointInfo);
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
 router.post('/createChain',chainContoller.createChain);
 router.get('/getSellingPointsByChainId/:chainId',professionalController.getSellingPointsByChainId);
