@@ -63,6 +63,10 @@ app.put('/editUser',adminMiddleware,(req, res) => {
 app.put('/editUserMobile',(req, res) => {
   userController.editUserMobile(req,res,io)
 });
+app.put('/editUserMobilePrinc',(req, res) => {
+  userController.editUserMobilePrinc(req,res,io)
+});
+
 app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
