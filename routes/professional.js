@@ -23,4 +23,10 @@ router.post('/signin', professionalController.signin);
 router.post('/selling-point',adminMiddleware, professionalController.createSellingPoint);
 router.post('/signin', professionalController.signin);
 router.get('/getAllUser',authMiddleware.checkProfessionalAccount, userController.GetAllUser);
+
+
+
+// delete selling point
+
+router.delete('/deleteSellingPoint/:id', professionalController.deleteSellingPoint);
 module.exports = router;
