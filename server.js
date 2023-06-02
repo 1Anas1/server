@@ -70,7 +70,9 @@ app.put('/resetPassword',(req, res) => {
   userController.resetPassword(req,res,io)
 });
 
-
+app.post('/deleteparent',(req, res) => {
+  userController.removeParentAndBracelet(req,res,io)
+});
 app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
