@@ -1423,11 +1423,12 @@ exports.editUser = async (req, res,io) => {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
       }
-    };
+    };  
+    
     exports.resetPassword = async (req, res, io) => {
       try {
         const { userId, currentPassword, newPassword, retypeNewPassword } = req.body;
-    
+        console.log(req.body);
         // Find the existing user by ID
         const user = await User.findById(userId);
         if (!user) {
