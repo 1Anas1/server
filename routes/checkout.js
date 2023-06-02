@@ -14,7 +14,7 @@ router.post('/family', checkoutController.addFamily);
 
 // Route to add a category
 router.post('/category', checkoutController.addCategory);
-
+router.post('/updateLimits',checkoutController.updateLimits);
 router.get('/getOperations',authMemberChild,checkoutController.getOperations)
 // Route to add a product
 router.post('/product', checkoutController.addProduct);

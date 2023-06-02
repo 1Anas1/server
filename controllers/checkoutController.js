@@ -270,6 +270,36 @@ const createBraceletLimit = async (req, res) => {
 
   return res.status(200).send({ message: "Limit added successfully", limit });
 };
+const updateLimits =async (req, res) => {
+  try {
+    const { braceletId,limits } = req.body;
+    const newLimits = limits;
+
+    // Delete existing limits for the given braceletId
+    await Limits.deleteMany({ bracelet: braceletId });
+
+    if (newLimits.length > 0) {
+      // Create an array of new limits objects to be saved
+      const limitsObjects = newLimits.map((limit) => ({
+        bracelet: braceletId,
+        restrictedshop: limit.idShops,
+        restrictedProducts: limit.productid,
+      }));
+
+      // Save the new limits objects
+      await Limits.create(limitsObjects);
+    }
+
+    res.status(200).json({ message: 'Limits updated successfully' });
+  } catch (error) {
+    console.error('Error updating limits:', error);
+    res.status(500).json({ error: 'Error updating limits' });
+  }
+}
+
+
+
+//-----------------------------------------------/
 const getChainsAndProducts = async (req, res) => {
   try {
     // Get all chains
@@ -350,5 +380,6 @@ module.exports = {
   addProduct,
   getOperations,
   createBraceletLimit,
-  getChainsAndProducts
+  getChainsAndProducts,
+  updateLimits
 };
