@@ -28,5 +28,5 @@ router.get('/getAllUser',authMiddleware.checkProfessionalAccount, userController
 
 // delete selling point
 
-router.post('/deleteSellingPoint', professionalController.deleteSellingPoint);
+router.delete('/deleteSellingPoint/:id', professionalController.deleteSellingPoint);
 module.exports = router;
