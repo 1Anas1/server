@@ -66,6 +66,10 @@ app.put('/editUserMobile',(req, res) => {
 app.put('/editUserMobilePrinc',(req, res) => {
   userController.editUserMobilePrinc(req,res,io)
 });
+app.put('/resetPassword',(req, res) => {
+  userController.resetPassword(req,res,io)
+});
+
 
 app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {

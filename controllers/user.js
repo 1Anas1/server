@@ -1424,3 +1424,39 @@ exports.editUser = async (req, res,io) => {
         res.status(500).json({ error: 'Server error' });
       }
     };
+    exports.resetPassword = async (req, res, io) => {
+      try {
+        const { userId, currentPassword, newPassword, retypeNewPassword } = req.body;
+    
+        // Find the existing user by ID
+        const user = await User.findById(userId);
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+    
+        // Check if the current password matches the one in the database
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ error: 'Incorrect current password' });
+        }
+    
+        // Check if the new password and the retyped new password are the same
+        if (newPassword !== retypeNewPassword) {
+          return res.status(400).json({ error: 'New passwords do not match' });
+        }
+    
+        // Hash the new password
+       
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+        // Update the password and save the user
+        user.password = hashedPassword;
+        await user.save();
+    
+        res.json({ message: 'Password updated successfully' });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+      }
+    };
+    
