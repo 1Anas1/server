@@ -1460,4 +1460,64 @@ exports.editUser = async (req, res,io) => {
         res.status(500).json({ error: 'Server error' });
       }
     };
+    exports.removeParentAndBracelet = async (req, res, io) => {
+      try {
+        const { parentId } = req.body;
     
+        // Find the parent to delete
+        const parent = await User.findById(parentId).populate('bracelets');
+        if (!parent) {
+          return res.status(404).json({ message: 'Parent not found' });
+        }
+    
+        // Check if parent has a child user
+        const childUser = await User.findOne({ parent: parentId });
+    
+        // If parent has a child user
+        if (childUser) {
+          return res.status(400).json({ error: "Parent user has a child user. Can not delete the parent." });
+        }
+    
+        // Delete the parent's bracelets
+        await Bracelet.deleteMany({ user: parentId });
+    
+        // Delete the parent
+        await User.findByIdAndDelete(parentId);
+        await emitToUser(parent._id,'user_info',io)
+        res.json({ message: 'Parent successfully removed, their bracelet has also been removed.' });
+      } catch (error) {
+        console.error('Error when removing parent:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    };
+    exports.removeProfessional = async (req, res, io) => {
+      try {
+        const { proId } = req.body;
+    
+        // Find the professional to delete
+        const professional = await User.findById(proId);
+        if (!professional) {
+          return res.status(404).json({ message: 'Professional not found' });
+        }
+    
+        // Check if professional has a shop
+        const shop = await Shop.findOne({ shop_email: professional.email });
+        if (shop) {
+          return res.status(400).json({ error: "Professional user has a shop. Please delete the shop before deleting the professional." });
+        }
+    
+        // Check if professional has a chain
+        const chain = await Chain.findOne({ owner: proId });
+        if (chain) {
+          return res.status(400).json({ error: "Professional user has a chain. Please delete the chain before deleting the professional." });
+        }
+    
+        // Delete the professional user
+        await User.findByIdAndDelete(proId);
+        await emitToUser(professional._id,'user_info',io)
+        res.json({ message: 'Professional successfully removed.' });
+      } catch (error) {
+        console.error('Error when removing professional:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    };
