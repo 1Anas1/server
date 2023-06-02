@@ -1233,14 +1233,14 @@ res.json(filteredUsers);
   }
 };
 
-exports.editUser = async (req, res) => {
+exports.editUser = async (req, res,io) => {
   try {
     const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
     } = req.body;
 
-
+    console.log(req.body);
     // Find the existing user by ID
-    const user = await User.findById(userId).populate("bracelets");
+    const user = await User.findById(userId).populate("bracelets").populate('parent');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -1288,10 +1288,75 @@ exports.editUser = async (req, res) => {
 
     // Save the updated user
     await user.save();
-
+    await emitToUser(user._id,'user_info',io)
+    await emitToUser(user.parent._id,'user_info',io)
     res.json({ message: 'User updated successfully', user });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+    exports.editUserMobile = async (req, res,io) => {
+      try {
+        const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
+        } = req.body;
+    
+        console.log(req.body);
+        // Find the existing user by ID
+        const user = await User.findById(userId).populate("bracelets").populate('parent');
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+    
+        // Update the user properties
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.email = email;
+        user.phone = phone;
+        user.birthDate = birthDate;
+        user.updated_at = Date.now();
+    
+        // Check if there is a new user image provided
+        if (image) {
+          // Decode the base64 image and save it to the "uploads" folder
+          const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const decodedImage = Buffer.from(image, 'base64');
+    const imageExtension = image.substring("data:image/".length, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.jpg`; // Generate a unique name for the image
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, decodedImage);
+    
+          // Update the user image
+          user.image = imageName;
+        }
+    
+        // Find the bracelet to update
+        if(is_disabled==="false" || is_disabled==="true"){
+          const bracelet = await Bracelet.findById(user.bracelets[0]);
+        if (bracelet) {
+          // Update the bracelet status and save it
+        if(is_disabled==="false"){
+          bracelet.is_disabled = false;
+        }
+        if(is_disabled==="true"){
+          bracelet.is_disabled = true;
+        }
+        await bracelet.save();
+        }
+    
+        
+        }
+        
+    
+        // Save the updated user
+        await user.save();
+        await emitToUser(user._id,'user_info',io)
+        await emitToUser(user.parent._id,'user_info',io)
+        res.json({ message: 'User updated successfully', user });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+      }
+    };

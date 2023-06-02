@@ -56,8 +56,13 @@ app.post('/createBraceletAdmin',userController.createBraceletAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)
 });
-app.put('/editUser',adminMiddleware,userController.editUser)
-app.put('/editUserMobile',userController.editUser)
+
+app.put('/editUser',adminMiddleware,(req, res) => {
+  userController.editUser(req,res,io)
+});
+app.put('/editUserMobile',(req, res) => {
+  userController.editUserMobile(req,res,io)
+});
 app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
