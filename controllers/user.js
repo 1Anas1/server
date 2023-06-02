@@ -1483,7 +1483,7 @@ exports.editUser = async (req, res,io) => {
     
         // Delete the parent
         await User.findByIdAndDelete(parentId);
-        await emitToUser(parent._id,'user_info',io)
+        
         res.json({ message: 'Parent successfully removed, their bracelet has also been removed.' });
       } catch (error) {
         console.error('Error when removing parent:', error.message);
