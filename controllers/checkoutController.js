@@ -7,6 +7,7 @@ const Bracelet = require('../models/Bracelet');
 const UserSocket =require('../models/UserSocket');
 const User = require("../models/User");
 const Chain = require("../models/Chain")
+const mongoose = require('mongoose');
 const { populate } = require('../models/Budget');
 
 //--------------------------socket-----------------------/
@@ -270,24 +271,32 @@ const createBraceletLimit = async (req, res) => {
 
   return res.status(200).send({ message: "Limit added successfully", limit });
 };
-const updateLimits =async (req, res) => {
+const updateLimits = async (req, res) => {
   try {
-    const { braceletId,limits } = req.body;
-    const newLimits = limits;
+    const { braceletId, limits } = req.body;
 
     // Delete existing limits for the given braceletId
     await Limits.deleteMany({ bracelet: braceletId });
 
-    if (newLimits.length > 0) {
-      // Create an array of new limits objects to be saved
-      const limitsObjects = newLimits.map((limit) => ({
+    if (limits.length > 0) {
+      // Create an array of new limits objects with generated ids
+      const limitsObjects = limits.map((limit) => ({
         bracelet: braceletId,
         restrictedshop: limit.idShops,
         restrictedProducts: limit.productid,
+        _id: mongoose.Types.ObjectId(), // Generate new id
       }));
+
+      console.log(limitsObjects);
 
       // Save the new limits objects
       await Limits.create(limitsObjects);
+
+      // Push the new limits ids to the 'restriction' array in the Bracelet model
+      await Bracelet.updateOne(
+        { _id: braceletId },
+        { $push: { 'restriction': { $each: limitsObjects.map(obj => obj._id) } } }
+      );
     }
 
     res.status(200).json({ message: 'Limits updated successfully' });
@@ -295,7 +304,9 @@ const updateLimits =async (req, res) => {
     console.error('Error updating limits:', error);
     res.status(500).json({ error: 'Error updating limits' });
   }
-}
+};
+
+
 
 
 
