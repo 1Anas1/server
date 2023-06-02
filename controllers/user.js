@@ -1453,7 +1453,7 @@ exports.editUser = async (req, res,io) => {
         user.password = hashedPassword;
         await user.save();
     
-        res.json({ message: 'Password updated successfully    ' });
+        res.json({ message: 'Password updated successfully' });
       } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
