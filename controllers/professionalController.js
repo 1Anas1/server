@@ -176,7 +176,7 @@ exports.getSellingPointsByChainId = async (req, res) => {
 exports.getSellingPoints = async (req, res) => {
   try {
     
-    const sellingPoints = await SellingPoint.find()
+    const sellingPoints = await SellingPoint.find().populate("owner")
 
     res.json(sellingPoints);
   } catch (error) {
@@ -189,7 +189,7 @@ exports.getSellingPointInfo = async (req, res) => {
 
   // Find the selling point with the provided ID
   try {
-    const sellingPoint = await SellingPoint.findById(id);
+    const sellingPoint = await SellingPoint.findById(id).populate("owner");
     if (!sellingPoint) {
       return res.status(404).json({ message: "Selling point not found" });
     }
@@ -244,4 +244,41 @@ exports.editShop = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
+exports.deleteSellingPoint = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // find the selling point
+    const sellingPoint = await SellingPoint.findById(id);
+    if (!sellingPoint) {
+      return res.status(404).json({ message: "Selling point not found" });
+    }
+    
+    // find the chain and remove the selling point from it
+    const chain = await Chain.findById(sellingPoint.chain_id);
+    if (chain) {
+      chain.selling_points = chain.selling_points.filter(sp => sp.sp_id.toString() !== id);
+      await chain.save();
+    }
+
+    // find the user and remove the selling point from them
+    const user = await User.findById(sellingPoint.owner);
+    if (user) {
+      user.selling_points = user.selling_points.filter(spId => spId.toString() !== id);
+      await user.save();
+    }
+
+    // delete the selling point
+    await SellingPoint.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Selling point deleted successfully" });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 
