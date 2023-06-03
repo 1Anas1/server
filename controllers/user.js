@@ -1423,11 +1423,12 @@ exports.editUser = async (req, res,io) => {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
       }
-    };
+    };  
+    
     exports.resetPassword = async (req, res, io) => {
       try {
         const { userId, currentPassword, newPassword, retypeNewPassword } = req.body;
-    
+        console.log(req.body);
         // Find the existing user by ID
         const user = await User.findById(userId);
         if (!user) {
@@ -1482,7 +1483,7 @@ exports.editUser = async (req, res,io) => {
     
         // Delete the parent
         await User.findByIdAndDelete(parentId);
-        await emitToUser(parent._id,'user_info',io)
+        
         res.json({ message: 'Parent successfully removed, their bracelet has also been removed.' });
       } catch (error) {
         console.error('Error when removing parent:', error.message);
