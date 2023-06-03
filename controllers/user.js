@@ -1520,3 +1520,35 @@ exports.editUser = async (req, res,io) => {
         res.status(500).json({ message: 'Internal server error' });
       }
     };
+    exports.deleteChain = async (req, res) => {
+      try {
+        const { chainId } = req.body;
+    
+        // Verify that the chain exists
+        const chain = await Chain.findById(chainId);
+        if (!chain) {
+          return res.status(404).json({ error: 'Chain not found' });
+        }
+    
+        // Verify that the chain doesn't have any associated shops
+        const shop = await SellingPoint.findOne({ chain_id: chainId });
+        if (shop) {
+          return res.status(400).json({ error: 'This chain has associated shops. Please delete them first.' });
+        }
+    
+        // Delete the chain
+        await Chain.findByIdAndDelete(chainId);
+    
+        // Remove the reference from the User's chains array
+        await User.updateOne(
+          { chains: chainId },
+          { $pull: { chains: chainId } }
+        );
+    
+        res.status(200).json({ message: 'Chain deleted successfully' });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+      }
+    };
+    
