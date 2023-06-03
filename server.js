@@ -26,6 +26,7 @@ const userController = require('./controllers/user');
 const professionalRoutes = require('./routes/professional');
 const checkoutRoute = require('./routes/checkout');
 const authMember = require('./middleware/memberAuth');
+const adminAndPro = require('./middleware/adminAndPro');
 const authMemberChild = require('./middleware/memberAndChild');
 const adminMiddleware = require('./middleware/adminMiddleware');
 const createAdmin = require('./controllers/createAdmin');
@@ -101,6 +102,7 @@ app.post('/addAmount',authMember, (req, res) => {
 app.post('/childSignup',authMember, (req, res) => {
   userController.childSignup(req, res, io);
 })
+app.post('/childSignupAdmin',userController.childSignupAdmin);
 
 app.post('/SignupMember',userController.SignupMember);
 app.post('/SignupMemberAdmin',userController.SignupMemberAdmin)

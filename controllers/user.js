@@ -498,13 +498,16 @@ exports.signinMember = async (req, res,io) => {
 
 exports.getUsersWithoutBracelets = async (req, res) => {
   try {
-    const role = await Role.findOne({ name: { $in: ['child', 'member'] } });
-    const users = await User.find({ bracelets: [], role: role._id }, 'email _id');
+    const roles = await Role.find({ name: { $in: ['member', 'child'] } });
+    const roleIds = roles.map((role) => role._id);
+    const users = await User.find({ bracelets: [], role: { $in: roleIds } }, 'email _id');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving users without bracelets' });
   }
 };
+
+
 
 
 exports.logout = (req, res) => {
@@ -1065,6 +1068,86 @@ exports.adminLogin = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+exports.childSignupAdmin = async (req, res) => {
+  try {
+    const {
+      idParent,
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      birthDate,
+      gender,
+      status,
+      image,
+    } = req.body;
+      console.log('emchy0');
+
+    // Finding the parent user with jwt token
+    const parent = await User.findById(idParent);
+    // Create child role if it doesn't exist
+
+    let childRole = await Role.findOne({ name: "child" });
+    if (!childRole) {
+      childRole = new Role({
+        name: "child",
+      });
+      await childRole.save();
+    }
+    childRoleId = childRole._id;
+
+    // Check if child user already exists
+    const existingUser = await User.findOne({
+      email,
+      $or: [{ role: childRoleId }, { role: parent.role }],
+    });
+    console.log('emchy0001');
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create child user
+    console.log('emchy0002');
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password:hashedPassword,
+      birthDate,
+      gender,
+      phone,
+      status,
+      role: childRoleId,
+      parent: parent._id,
+    });
+    console.log('emchy0002');
+    console.log('emchy0');
+    // Decode and save the image
+    const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, base64Data, { encoding: 'base64' });
+
+    // Store the image URI in the user model
+    user.image = imageName;
+    
+    console.log('emchy3');
+    await user.save();
+
+    // Add child to parent's children array
+    parent.children.push(user._id);
+    await parent.save();
+    res.status(201).json({userId:user._id, message: "Child user created successfully." });
+  } catch (error) {
+    console.log('hhhh');
+    console.log(error.message);
+    res.status(400).json({ error: error.message });
   }
 };
 
