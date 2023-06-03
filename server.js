@@ -53,6 +53,7 @@ app.post('/stati', userController.getAmountByCategory);
 app.get('/getUsersWithoutBracelets',userController.getUsersWithoutBracelets);
 app.get('/getProfessionalUsers',userController.getProfessionalUsers);
 app.post('/createBraceletAdmin',userController.createBraceletAdmin);
+app.post('/proSignupAdmin',userController.proSignupAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)
 });

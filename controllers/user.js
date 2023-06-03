@@ -7,9 +7,9 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
 const dotenv = require("dotenv");
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 const UserSocket =require('../models/UserSocket');
 const { Family, Category,Product } = require('../models/Product');
 const mongoose = require('mongoose');
@@ -655,14 +655,15 @@ exports.SignupMember = async (req, res) => {
     // Decode and save the image
     const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
     const decodedImage = Buffer.from(image, 'base64');
-    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
-    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+    const imageExtension = image.substring("data:image/".length, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.jpg`; // Generate a unique name for the image
     const imagePath = path.join(uploadDir, imageName);
 
     fs.writeFileSync(imagePath, decodedImage);
 
     // Store the image URI in the user model
     user.image = imageName;
+    
 
     await user.save();
 
@@ -721,10 +722,11 @@ exports.SignupMemberAdmin = async (req, res) => {
       role: childRoleId,
     });
     // Decode and save the image
+    // Decode and save the image
     const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
     const decodedImage = Buffer.from(image, 'base64');
-    const imageExtension = image.substring("data:image/".length, image.indexOf(";base64"));
-    const imageName = `${uuidv4()}.jpg`; // Generate a unique name for the image
+    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
     const imagePath = path.join(uploadDir, imageName);
 
     fs.writeFileSync(imagePath, decodedImage);
@@ -1066,7 +1068,73 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
+exports.proSignupAdmin = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      birthDate,
+      gender,
+      status,
+      image,
+    } = req.body;
 
+    // Create child role if it doesn't exist
+    let childRole = await Role.findOne({ name: "professional" });
+    if (!childRole) {
+      childRole = new Role({
+        name: "professional",
+      });
+      await childRole.save();
+    }
+    childRoleId = childRole._id;
+
+    // Check if child user already exists
+    const existingUser = await User.findOne({ email }).populate({
+      path: "role",
+      match: { name: "professional" },
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create child user
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      phone,
+      birthDate,
+      gender,
+      status,
+      role: childRoleId,
+    });
+
+    // Decode and save the image
+    const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, base64Data, { encoding: 'base64' });
+
+  
+    // Store the image URI in the user model
+    user.image = imageName;
+
+    await user.save();
+
+    res.status(201).json({ userId: user._id, message: "Professional user created successfully." });
+  } catch (error) {
+    console.log(error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
 exports.proSignup = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
