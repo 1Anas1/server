@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Chain = require('../models/Chain');
+const SellingPoint=require('../models/SellingPoint')
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');

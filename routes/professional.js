@@ -7,7 +7,7 @@ const userController = require('../controllers/user');
 const chainContoller = require('../controllers/chain');
 
 
-router.post('/deleteChain',chainContoller.deleteChain);
+
 router.put('/getSellingPointInfo',professionalController.getSellingPointInfo);
 router.get('/getSellingPointInfo/:id',professionalController.getSellingPointInfo);
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);
@@ -29,6 +29,6 @@ router.get('/getAllUser',authMiddleware.checkProfessionalAccount, userController
 
 
 // delete selling point
-
+router.delete('/deleteChain',chainContoller.deleteChain);
 router.delete('/deleteSellingPoint/:id', professionalController.deleteSellingPoint);
 module.exports = router;
