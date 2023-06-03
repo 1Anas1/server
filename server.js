@@ -77,6 +77,9 @@ app.post('/getUserInfo',userController.getUserInfo)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
 });
+app.post('/deletepro',(req, res) => {
+  userController.removeProfessional(req,res,io)
+});
 app.post('/deletechild',(req, res) => {
   userController.removeChildAndTransferBraceletAmount(req,res,io)
 });

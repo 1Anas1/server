@@ -1,5 +1,5 @@
 const Chain = require('../models/Chain');
-const SellingPoint = require('../models/sellingPoint');
+const SellingPoint = require('../models/SellingPoint');
 const User = require('../models/User');const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Role = require("../models/Role");
@@ -259,7 +259,7 @@ exports.deleteSellingPoint = async (req, res) => {
     // find the chain and remove the selling point from it
     const chain = await Chain.findById(sellingPoint.chain_id);
     if (chain) {
-      chain.selling_points = chain.selling_points.filter(sp => sp.sp_id.toString() !== id);
+      chain.selling_points = chain.selling_points.filter(sp => sp.toString() !== id);
       await chain.save();
     }
 

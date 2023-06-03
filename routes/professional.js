@@ -6,6 +6,8 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 const userController = require('../controllers/user');
 const chainContoller = require('../controllers/chain');
 
+
+router.post('/deleteChain',chainContoller.deleteChain);
 router.put('/getSellingPointInfo',professionalController.getSellingPointInfo);
 router.get('/getSellingPointInfo/:id',professionalController.getSellingPointInfo);
 router.get('/getAllChains',adminMiddleware,chainContoller.getAllChains);

@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const Role = require("../models/Role");
 const Bracelet = require('../models/Bracelet');
+const Chain =require ('../models/Chain')
+const SellingPoint =require ('../models/SellingPoint')
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
@@ -30,6 +32,8 @@ async function emitToUser(userId, event, io) {
     if (user1.role.name === 'child') {
       console.log("child");
       // Find the user by their ID and populate parent, children, and bracelets
+
+
       user = await User.findById(userId)
         .populate('role')
         .populate({
@@ -1500,56 +1504,27 @@ exports.editUser = async (req, res,io) => {
           return res.status(404).json({ message: 'Professional not found' });
         }
     
-        // Check if professional has a shop
-        const shop = await Shop.findOne({ shop_email: professional.email });
+        // Check if professional owns a selling point
+        const shop = await SellingPoint.findOne({ owner: proId });
         if (shop) {
-          return res.status(400).json({ error: "Professional user has a shop. Please delete the shop before deleting the professional." });
+          return res.status(400).json({ error: "Professional user owns a selling point. Please delete the selling point before deleting the professional." });
         }
     
-        // Check if professional has a chain
+        // Check if professional owns a chain
         const chain = await Chain.findOne({ owner: proId });
         if (chain) {
-          return res.status(400).json({ error: "Professional user has a chain. Please delete the chain before deleting the professional." });
+          return res.status(400).json({ error: "Professional user owns a chain. Please delete the chain before deleting the professional." });
         }
     
         // Delete the professional user
         await User.findByIdAndDelete(proId);
-        await emitToUser(professional._id,'user_info',io)
+       
         res.json({ message: 'Professional successfully removed.' });
       } catch (error) {
         console.error('Error when removing professional:', error.message);
         res.status(500).json({ message: 'Internal server error' });
       }
     };
-    exports.deleteChain = async (req, res) => {
-      try {
-        const { chainId } = req.body;
     
-        // Verify that the chain exists
-        const chain = await Chain.findById(chainId);
-        if (!chain) {
-          return res.status(404).json({ error: 'Chain not found' });
-        }
     
-        // Verify that the chain doesn't have any associated shops
-        const shop = await SellingPoint.findOne({ chain_id: chainId });
-        if (shop) {
-          return res.status(400).json({ error: 'This chain has associated shops. Please delete them first.' });
-        }
-    
-        // Delete the chain
-        await Chain.findByIdAndDelete(chainId);
-    
-        // Remove the reference from the User's chains array
-        await User.updateOne(
-          { chains: chainId },
-          { $pull: { chains: chainId } }
-        );
-    
-        res.status(200).json({ message: 'Chain deleted successfully' });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-      }
-    };
     
