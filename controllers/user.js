@@ -335,11 +335,13 @@ exports.GetAllUser = async (req, res) => {
           lastname: user.lastName,
           img: user.image,
           email: user.email,
+          
           statusaccount: status1,
         };
 
         if (user.role.toString() === roles[0]._id.toString()) {
           if(user.bracelets[0]){
+          formattedUser.solde=user.bracelets[0].amount
           if(user.bracelets[0].is_disabled){
             formattedUser.statusbraclet="inactive"
           }else{
