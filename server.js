@@ -103,7 +103,7 @@ app.post('/childSignup',authMember, (req, res) => {
   userController.childSignup(req, res, io);
 })
 app.post('/childSignupAdmin',userController.childSignupAdmin);
-
+app.post('/empSignupAdmin',userController.empSignupAdmin)
 app.post('/SignupMember',userController.SignupMember);
 app.post('/SignupMemberAdmin',userController.SignupMemberAdmin)
 app.post('/adminLogin', userController.adminLogin);

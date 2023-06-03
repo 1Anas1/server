@@ -61,6 +61,10 @@ const user = new mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'Chain'
   }],
+  shopEmp:{
+    type: Schema.Types.ObjectId,
+    ref: 'SellingPoint'
+  },
   selling_points: [{
     type: Schema.Types.ObjectId,
     ref: 'SellingPoint'
@@ -76,6 +80,10 @@ const user = new mongoose.Schema({
   role: {
     type: Schema.Types.ObjectId,
     ref: 'Role'
+  },
+  roleEmp:{
+    type: String,
+    required: true
   }
    
   })

@@ -21,6 +21,7 @@ const sellingPointSchema = new mongoose.Schema({
   end_contract: Date,
   owner: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
   chain_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chain' },
+  empl:[{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]
 });
 
 module.exports = mongoose.model('SellingPoint', sellingPointSchema);

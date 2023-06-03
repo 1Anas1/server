@@ -1152,6 +1152,85 @@ exports.childSignupAdmin = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+exports.empSignupAdmin = async (req, res) => {
+  try {
+    const {
+      idSellingPoint,
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      roleEmp,
+      birthDate,
+      image,
+    } = req.body;
+      console.log('emchy0');
+
+    // Finding the parent user with jwt token
+    const sellingPoint = await SellingPoint.findById(idSellingPoint);
+    
+
+    let employeeRole = await Role.findOne({ name: "employee" });
+    if (!employeeRole) {
+      employeeRole = new Role({
+        name: "employee",
+      });
+      await employeeRole.save();
+    }
+    employeeRoleId = employeeRole._id;
+
+    // Check if child user already exists
+    const existingUser = await User.findOne({
+      email,
+       role: employeeRoleId ,
+    });
+    console.log('emchy0001');
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create child user
+    console.log('emchy0002');
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password:hashedPassword,
+      birthDate,
+      phone,
+      roleEmp,
+      status:'true',
+      role: employeeRoleId,
+      shopEmp:sellingPoint._id
+    });
+    console.log('emchy0002');
+    console.log('emchy0');
+    // Decode and save the image
+    const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+    const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+    const imagePath = path.join(uploadDir, imageName);
+
+    fs.writeFileSync(imagePath, base64Data, { encoding: 'base64' });
+
+    // Store the image URI in the user model
+    user.image = imageName;
+    
+    console.log('emchy3');
+    await user.save();
+
+    // Add child to parent's children array
+    sellingPoint.empl.push(user._id)
+    await sellingPoint.save();
+    res.status(201).json({userId:user._id, message: "employee user created successfully." });
+  } catch (error) {
+    console.log('hhhh');
+    console.log(error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
 
 exports.proSignupAdmin = async (req, res) => {
   try {
