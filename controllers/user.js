@@ -13,6 +13,7 @@ const { v4: uuidv4 } = require("uuid");
 const UserSocket =require('../models/UserSocket');
 const { Family, Category,Product } = require('../models/Product');
 const mongoose = require('mongoose');
+const geolib = require('geolib');
 
 const Operation = require('../models/Operation');
 
@@ -1912,6 +1913,55 @@ exports.editUser = async (req, res,io) => {
   
   
   
+    
+    
+    //const geolib = require('geolib');
+
+    // geolib = require('geolib');
+
+
+exports.getSellingPointsNearPosition = (req, res) => {
+  const { longitude, latitude } = req.body; // Get the longitude and latitude from req.body
+
+  // Find selling points near the given position
+  SellingPoint.find({
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+        $maxDistance: 10000, // Specify the maximum distance in meters
+      },
+    },
+  })
+    .populate('chain_id')
+    .then((sellingPoints) => {
+      const sellingPointsWithDistance = sellingPoints.map((point) => {
+        const distance = geolib.getDistance(
+          { latitude, longitude },
+          { latitude: point.location.coordinates[1], longitude: point.location.coordinates[0] }
+        );
+        return {
+          sellingPoint: point,
+          distance: distance / 1000, // Convert distance to kilometers
+        };
+      });
+
+      // Sort the selling points by distance in ascending order
+      sellingPointsWithDistance.sort((a, b) => a.distance - b.distance);
+
+      res.json(sellingPointsWithDistance);
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+};
+
+    
+
+    
     
     
     

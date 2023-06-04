@@ -85,6 +85,7 @@ app.post('/getShopWithEmployees',userController.getShopWithEmployees)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
 });
+app.post('/getSellingPointsNearPosition',userController.getSellingPointsNearPosition)
 app.post('/deletepro',(req, res) => {
   userController.removeProfessional(req,res,io)
 });
