@@ -1485,7 +1485,7 @@ res.json(filteredUsers);
 exports.editUser = async (req, res,io) => {
 
   try {
-    const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
+    const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled,password
     } = req.body;
 
     console.log(req.body);
@@ -1538,8 +1538,9 @@ exports.editUser = async (req, res,io) => {
     if (password) {
       // if a password was provided, hash it before storing it
       // this assumes you have a hashing function available
-      user.password =await bcrypt.hash(password, 10);;
+      user.password = await bcrypt.hash(password, 10);
     }
+   
 
     // Save the updated user
     await user.save();
