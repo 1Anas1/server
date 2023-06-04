@@ -12,14 +12,104 @@ const { populate } = require('../models/Budget');
 
 //--------------------------socket-----------------------/
 
-async function emitToUser(userId, event, data, io) {
+async function emitToUser(userId, event, io) {
   try {
     const userSockets = await UserSocket.find({ userId });
-    console.log('connecter',userSockets);
-    userSockets.forEach((userSocket) => {
-      const socketId = userSocket.socketId;
-      io.to(socketId).emit(event, data);
-    });
+    console.log('connecter');
+
+    const user1 = await User.findById(userId)
+      .populate('role')
+      .exec();
+      let user;
+    if (user1.role.name === 'child') {
+      console.log("child");
+      // Find the user by their ID and populate parent, children, and bracelets
+
+
+      user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'parent',
+          populate: {
+            path: 'bracelets',
+          },
+          populate: {
+            path: 'children',
+            populate: {
+              path: 'bracelets',
+            },
+          },
+        })
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
+
+      if (!user.parent) {
+        throw new Error('Parent not found');
+      }
+
+      // Extract the parent and other children data
+     console.log(userId._id)
+      const { parent, children } = user;
+      const parentWithBracelets = await User.findById(parent._id).populate('bracelets');
+      const otherChildren = parent.children.filter(child => child._id.toString() !== userId._id.toString());
+     
+      // Modify the children array with parent information and bracelet details
+      const modifiedChildren = [
+        parentWithBracelets,
+        ...otherChildren.map(child => child),
+      ];
+
+      // Modify the user object with the modified children array
+      user.children = modifiedChildren;
+      console.log(user)
+      userSockets.forEach((userSocket) => {
+        const socketId = userSocket.socketId;
+        io.to(socketId).emit(event, user);
+  
+      });
+      user={};
+    } else {
+      console.log("parent");
+      // Find the user by their ID and populate role, children, and bracelets
+      user = await User.findById(userId)
+        .populate('role')
+        .populate({
+          path: 'children',
+          populate: { path: 'bracelets',
+          populate:{
+            path:'restriction',
+            populate:[
+              {path:'restrictedshop'},
+              {path:'restrictedProducts'}
+            ],
+        },
+        }})
+        .populate({
+          path: 'bracelets',
+          populate: {
+            path: 'operations',
+            populate: [
+              { path: 'sellingPoint' },
+              { path: 'operationLines', populate: { path: 'product', select: 'name' } },
+            ],
+          },
+        })
+        .exec();
+
+      userSockets.forEach((userSocket) => {
+        const socketId = userSocket.socketId;
+        io.to(socketId).emit(event, user);
+      });
+    }
   } catch (error) {
     console.error(error);
   }
@@ -174,7 +264,8 @@ const payment = async (req, res,io) => {
     .populate('children').exec();
     if(user){
       console.log('payment')
-      await emitToUser(user._id,'user_info',user,io)
+      
+      await emitToUser(user._id,'user_info',io)
     }
     
     
