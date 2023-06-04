@@ -261,6 +261,17 @@ exports.addAmount = async (req, res,io) => {
   await emitToUser(req.userId,'user_info',io)
   res.json(bracelet);
 };
+exports.getShopWithEmployees = async (req, res) => {
+  try {
+    const { shopId } = req.body;
+    
+    const shop = await SellingPoint.findById(shopId).populate('empl');
+    res.json(shop);
+  } catch (error) {
+    
+    res.status(500).json({ message: 'Error retrieving shop with employees' });
+  }
+};
 exports.getUserInfo = async (req, res) => {
   try {
     const { idUser } = req.body;

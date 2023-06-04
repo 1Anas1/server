@@ -76,6 +76,7 @@ app.post('/deleteparent',(req, res) => {
   userController.removeParentAndBracelet(req,res,io)
 });
 app.post('/getUserInfo',userController.getUserInfo)
+app.post('/getShopWithEmployees',userController.getShopWithEmployees)
 app.post('/bloquerbracelet', authMemberChild,(req, res) => {
   userController.bloquerbracelet(req,res,io)
 });
