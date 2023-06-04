@@ -1485,7 +1485,7 @@ res.json(filteredUsers);
 exports.editUser = async (req, res,io) => {
 
   try {
-    const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled,password
+    const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
     } = req.body;
 
     console.log(req.body);
@@ -1500,7 +1500,7 @@ exports.editUser = async (req, res,io) => {
     user.lastName = lastName;
     user.email = email;
     user.phone = phone;
-    user.password = password;
+    
     user.birthDate = birthDate;
     user.updated_at = Date.now();
 
@@ -1535,11 +1535,7 @@ exports.editUser = async (req, res,io) => {
 
     
     }
-    if (password) {
-      // if a password was provided, hash it before storing it
-      // this assumes you have a hashing function available
-      user.password = await bcrypt.hash(password, 10);
-    }
+   
    
 
     // Save the updated user
@@ -1846,7 +1842,7 @@ exports.editUser = async (req, res,io) => {
           res.status(500).json({ error: error.message });
       }
   };
-  exports.editUser = async (req, res, io) => {
+  exports.editUseradmin = async (req, res, io) => {
     try {
       const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled } = req.body;
   
@@ -1959,6 +1955,75 @@ exports.getSellingPointsNearPosition = (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 };
+exports.getTotalChildCount = (req, res) => {
+  Role.findOne({ name: "child" })
+    .then(childRole => {
+      if (childRole) {
+        User.countDocuments({ role: childRole._id })
+          .then(childCount => {
+            res.json(childCount);
+          })
+          .catch(err => {
+            console.error("Error during User countDocuments:", err);
+            res.status(500).json({ error: 'Server error during User countDocuments' });
+          });
+      } else {
+        console.error("Child role not found.");
+        res.status(500).json({ error: "Child role not found." });
+      }
+    })
+    .catch(error => {
+      console.error("Error during Role findOne:", error);
+      res.status(500).json({ error: 'Server error during Role findOne' });
+    });
+};
+exports.getTotalMemberCount = async (req, res) => {
+  try {
+    // Fetch member role id
+    const memberRole = await Role.findOne({ name: "member" });
+
+    // If the member role exists, count the number of users with that role
+    if(memberRole) {
+      const memberCount = await User.countDocuments({ role: memberRole._id });
+      res.json(memberCount);
+    } else {
+      throw new Error("Member role not found.");
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+exports.getTotalProCount = async (req, res) => {
+  try {
+    // Fetch professional role id
+    const proRole = await Role.findOne({ name: "professional" });
+
+    // If the professional role exists, count the number of users with that role
+    if(proRole) {
+      const proCount = await User.countDocuments({ role: proRole._id });
+      res.json(proCount);
+    } else {
+      throw new Error("Professional role not found.");
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+exports.getTotalBraceletCount = async (req, res) => {
+  try {
+    // Count the number of bracelets
+    const braceletCount = await Bracelet.countDocuments();
+    res.json(braceletCount);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 
     
 
