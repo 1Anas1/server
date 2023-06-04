@@ -83,7 +83,7 @@ const user = new mongoose.Schema({
   },
   roleEmp:{
     type: String,
-    required: true
+    required: false
   }
    
   })
