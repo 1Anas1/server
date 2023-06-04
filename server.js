@@ -58,6 +58,9 @@ app.post('/proSignupAdmin',userController.proSignupAdmin);
 app.post('/transfer', authMemberChild,(req, res) => {
   userController.transfer(req,res,io)
 });
+app.put('/editemp',adminMiddleware,(req, res) => {
+  userController.empUpdateAdmin(req,res,io)
+});
 
 app.put('/editUser',adminMiddleware,(req, res) => {
   userController.editUser(req,res,io)
@@ -71,7 +74,9 @@ app.put('/editUserMobilePrinc',(req, res) => {
 app.put('/resetPassword',(req, res) => {
   userController.resetPassword(req,res,io)
 });
-
+app.post('/deleteEmp',(req, res) => {
+  userController.empDeleteAdmin(req,res,io)
+});
 app.post('/deleteparent',(req, res) => {
   userController.removeParentAndBracelet(req,res,io)
 });

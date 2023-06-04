@@ -1482,6 +1482,7 @@ res.json(filteredUsers);
 };
 
 exports.editUser = async (req, res,io) => {
+
   try {
     const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled
     } = req.body;
@@ -1498,6 +1499,7 @@ exports.editUser = async (req, res,io) => {
     user.lastName = lastName;
     user.email = email;
     user.phone = phone;
+    user.password = password;
     user.birthDate = birthDate;
     user.updated_at = Date.now();
 
@@ -1532,7 +1534,11 @@ exports.editUser = async (req, res,io) => {
 
     
     }
-    
+    if (password) {
+      // if a password was provided, hash it before storing it
+      // this assumes you have a hashing function available
+      user.password =await bcrypt.hash(password, 10);;
+    }
 
     // Save the updated user
     await user.save();
@@ -1769,6 +1775,144 @@ exports.editUser = async (req, res,io) => {
         res.status(500).json({ message: 'Internal server error' });
       }
     };
+    exports.empUpdateAdmin = async (req, res) => {
+      try {
+        const {
+          userId,
+          firstName,
+          lastName,
+          email,
+          phone,
+          roleEmp,
+          birthDate,
+          image,
+        } = req.body;
+    
+        // Find the user with the given ID
+        const user = await User.findById(userId);
+    
+        if (!user) {
+          return res.status(404).json({ error: "User not found." });
+        }
+    
+        // Update user details
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.email = email;
+        user.phone = phone;
+        user.roleEmp = roleEmp;
+        user.birthDate = birthDate;
+    
+        // Decode and save the new image
+        if (image) {
+          const uploadDir = 'uploads/'; // Modify with the actual path to the upload folder
+          const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+          const imageExtension = image.substring(image.indexOf("/") + 1, image.indexOf(";base64"));
+          const imageName = `${uuidv4()}.${imageExtension}`; // Generate a unique name with the true image extension
+          const imagePath = path.join(uploadDir, imageName);
+    
+          fs.writeFileSync(imagePath, base64Data, { encoding: 'base64' });
+    
+          // Store the image URI in the user model
+          user.image = imageName;
+        }
+    
+        await user.save();
+        res.status(200).json({ message: "Employee updated successfully." });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+      }
+    };
+    exports.empDeleteAdmin = async (req, res) => {
+      try {
+          const { userId } = req.body;
+  
+          // Find the user with the given ID
+          const user = await User.findById(userId);
+  
+          if (!user) {
+              return res.status(404).json({ error: "User not found." });
+          }
+  
+          // Delete the user
+          await User.findByIdAndRemove(userId);
+  
+          res.status(200).json({ message: "Employee deleted successfully." });
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: error.message });
+      }
+  };
+  exports.editUser = async (req, res, io) => {
+    try {
+      const { userId, firstName, lastName, email, phone, birthDate, image, is_disabled } = req.body;
+  
+      // Find the existing user by ID
+      const user = await User.findById(userId).populate("bracelets").populate('parent').populate('role');
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      if (user.role && user.role.name === 'admin') {
+        // If role is admin, update only firstName, lastName, and email
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.email = email;
+      } else {
+        // Update all the properties for non-admin roles
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.email = email;
+        user.phone = phone;
+        user.birthDate = birthDate;
+        user.updated_at = Date.now();
+      }
+  
+      // Check if there is a new user image provided
+      if (image) {
+        // Decode the base64 image and save it to the "uploads" folder
+        const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+        const fileExtension = matches[1];
+        const base64Data = matches[2];
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const imageName = `${Date.now()}.${fileExtension}`; // Generate a unique name with the correct file extension
+        const imagePath = path.join(__dirname, '../uploads', imageName);
+        fs.writeFileSync(imagePath, imageBuffer);
+  
+        // Update the user image
+        user.image = imageName;
+      }
+  
+      // Find the bracelet to update
+      if(is_disabled==="false" || is_disabled==="true"){
+        const bracelet = await Bracelet.findById(user.bracelets[0]);
+        if (bracelet) {
+          // Update the bracelet status and save it
+          if(is_disabled==="false"){
+            bracelet.is_disabled = false;
+          }
+          if(is_disabled==="true"){
+            bracelet.is_disabled = true;
+          }
+          await bracelet.save();
+        }
+      }
+  
+      // Save the updated user
+      await user.save();
+      await emitToUser(user._id, 'user_info', io);
+      await emitToUser(user.parent._id, 'user_info', io);
+      res.json({ message: 'User updated successfully', user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  };
+  
+  
+  
+    
     
     
     
