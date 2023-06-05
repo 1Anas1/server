@@ -2154,7 +2154,46 @@ exports.calculateSellingPointCountByOwner = async (req, res) => {
     res.json({ count: sellingPointsCount });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error' });}}
+exports.getCainByUserId = async (req, res) => {
+  try {
+    
+
+    // Find the user by their ID and populate their chains and selling points
+    const user = await User.findById(req.userId)
+  .populate({
+    path: 'chains',
+    populate: [
+      {
+        path: 'selling_points'
+      },
+      {
+        path: 'owner'
+      }
+    ]
+  });
+  
+
+      
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prepare the response data
+    const response = {
+      sellingPoints: []
+    };
+
+    // Retrieve selling points for each chain
+  
+
+    // Send the response
+    res.status(200).json(user);
+  } catch (error) {
+    console.log(error);
+    // Handle errors
+    res.status(500).json({ error: 'Internal server error' });
+
   }
 };
 
