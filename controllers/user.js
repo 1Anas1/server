@@ -2146,12 +2146,12 @@ exports.getSellingPointsByUserId = async (req, res) => {
 };
 exports.calculateSellingPointCountByOwner = async (req, res) => {
   try {
-    const owner = req.params.owner; // Récupérer le client principal (owner) depuis les paramètres de la requête
+    // Récupérer le client principal (owner) depuis les paramètres de la requête
 
     // Rechercher les SellingPoints appartenant au client principal (owner)
-    const sellingPointsCount = await SellingPoint.countDocuments({ owner });
+    const sellingPointsCount = await SellingPoint.countDocuments({ owner:req.userId });
 
-    res.json({ count: sellingPointsCount });
+    res.status(200).json(sellingPointsCount );
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });}}
@@ -2194,6 +2194,19 @@ exports.getCainByUserId = async (req, res) => {
     // Handle errors
     res.status(500).json({ error: 'Internal server error' });
 
+  }
+};
+exports.calculateChainCountByOwner = async (req, res) => {
+  try {
+ // Récupérer le propriétaire (owner) depuis les paramètres de la requête
+
+    // Compter les chaînes appartenant au propriétaire (owner)
+    const chainCount = await Chain.countDocuments({ owner:req.userId });
+
+    res.json(chainCount );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 

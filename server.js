@@ -98,7 +98,9 @@ app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });
-app.get('/calculateSellingPointCountByOwner/:id',userController.calculateSellingPointCountByOwner )
+
+app.get('/calculateChainCountByOwner',adminAndPro,userController.calculateChainCountByOwner )
+app.get('/calculateSellingPointCountByOwner',adminAndPro,userController.calculateSellingPointCountByOwner )
 app.get('/calculateTransferPercentage',userController.calculateTransferPercentage )
 app.get('/getTotalBraceletCount',userController.getTotalBraceletCount )
 app.get('/getTotalProCount',userController.getTotalProCount )
