@@ -2144,6 +2144,19 @@ exports.getSellingPointsByUserId = async (req, res) => {
 
   }
 };
+exports.calculateSellingPointCountByOwner = async (req, res) => {
+  try {
+    const owner = req.params.owner; // Récupérer le client principal (owner) depuis les paramètres de la requête
+
+    // Rechercher les SellingPoints appartenant au client principal (owner)
+    const sellingPointsCount = await SellingPoint.countDocuments({ owner });
+
+    res.json({ count: sellingPointsCount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
 
 
