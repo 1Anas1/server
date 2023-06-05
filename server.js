@@ -96,7 +96,7 @@ app.post('/deletechild', userController.removeChildAndTransferBraceletAmount);
 app.post('/signinMember',(req, res) => { 
   userController.signinMember(req, res,io)
 });
-
+app.get('/calculateTransferPercentage',userController.calculateTransferPercentage )
 app.get('/getTotalBraceletCount',userController.getTotalBraceletCount )
 app.get('/getTotalProCount',userController.getTotalProCount )
 app.get('/getTotalMemberCount',userController.getTotalMemberCount )

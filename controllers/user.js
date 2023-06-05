@@ -1048,6 +1048,7 @@ exports.transfer = async (req, res,io) => {
     } else {
       res.status(403).json({ error: 'Forbidden' });
     }
+    
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -2023,6 +2024,28 @@ exports.getTotalBraceletCount = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+exports.calculateTransferPercentage = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments({});
+    const totalTransfers = await Operation.countDocuments({ type: 'transfer' });
+
+    // add debug logs
+    console.log('Total Users: ', totalUsers);
+    console.log('Total Transfers: ', totalTransfers);
+
+    const transferPercentage = totalTransfers / totalUsers ; // to get percentage
+
+    const transferPercentageInteger = Math.floor(transferPercentage); // round down to the nearest whole number
+
+    res.json({ transferPercentage: transferPercentageInteger , totalTransfers: totalTransfers }); // return the integer part only
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+
 
 
     
