@@ -309,7 +309,7 @@ exports.getUserInfo = async (req, res) => {
 };
 exports.GetAllInfoUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('role').populate('bracelets')
+    const user = await User.findById(req.userId).populate('role').populate('bracelets')
     .populate('children').exec();
     res.json(user);
   } catch (error) {
@@ -1540,8 +1540,11 @@ exports.editUser = async (req, res,io) => {
 
     // Save the updated user
     await user.save();
-    await emitToUser(user._id,'user_info',io)
-    await emitToUser(user.parent._id,'user_info',io)
+    await emitToUser(userId,'user_info',io)
+    if(user.parent){
+      await emitToUser(user.parent._id,'user_info',io)
+    }
+    
     res.json({ message: 'User updated successfully', user });
   } catch (error) {
     console.error(error);
@@ -2023,6 +2026,107 @@ exports.getTotalBraceletCount = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+exports.getSellingPointsByUserId = async (req, res) => {
+  try {
+    
+
+    // Find the user by their ID and populate their chains and selling points
+    const user = await User.findById(req.userId)
+  .populate({
+    path: 'chains',
+    populate: {
+      path: 'selling_points.sp_id',
+      model: 'SellingPoint',
+      populate: [
+        {
+          path: 'owner',
+          model: 'User'
+        },
+        {
+          path: 'chain_id',
+          model: 'Chain'
+        }
+      ]
+    }
+  })
+  .populate({
+    path: 'selling_points',
+    populate: [
+      {
+        path: 'owner',
+        model: 'User'
+      },
+      {
+        path: 'chain_id',
+        model: 'Chain'
+      }
+    ]
+  });
+
+      
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prepare the response data
+    const response = {
+      sellingPoints: []
+    };
+
+    // Retrieve selling points for each chain
+    for (const chain of user.chains) {
+      for (const sellingPoint of chain.selling_points) {
+        //console.log(sellingPoint);
+        if(sellingPoint.sp_id)
+       { response.sellingPoints.push({
+          
+          sellingPointId: sellingPoint.sp_id._id,
+          sellingPointName: sellingPoint.sp_id.sp_name,
+          sellingPointEmail: sellingPoint.sp_id.sp_email,
+          sellingPointAddress: sellingPoint.sp_id.sp_address,
+          sellingPointLocation: sellingPoint.sp_id.location,
+          sellingPointImage: sellingPoint.sp_id.sp_image,
+          sellingPointPhone: sellingPoint.sp_id.sp_phone,
+          paymentRequirement: sellingPoint.sp_id.payment_requirement,
+          endContract: sellingPoint.sp_id.end_contract,
+          ownerId: sellingPoint.sp_id.owner,
+          chainId: chain._id,
+          chainName: chain.chain_name
+        });}
+      }
+    }
+
+    // Retrieve the user's own selling points
+    for (const sellingPoint of user.selling_points) {
+      console.log('hhh')
+      response.sellingPoints.push({
+        sellingPointId: sellingPoint._id,
+        sellingPointName: sellingPoint.sp_name,
+        sellingPointEmail: sellingPoint.sp_email,
+        sellingPointAddress: sellingPoint.sp_address,
+        sellingPointLocation: sellingPoint.location,
+        sellingPointImage: sellingPoint.sp_image,
+        sellingPointPhone: sellingPoint.sp_phone,
+        paymentRequirement: sellingPoint.payment_requirement,
+        endContract: sellingPoint.end_contract,
+        ownerId: sellingPoint.owner,
+        chainId: null,
+        chainName: null
+      });
+    }
+
+    // Send the response
+    res.status(200).json(response);
+  } catch (error) {
+    console.log(error);
+    // Handle errors
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
+
 
 
     
