@@ -62,7 +62,7 @@ app.put('/editemp',adminMiddleware,(req, res) => {
   userController.empUpdateAdmin(req,res,io)
 });
 
-app.put('/editUser',adminMiddleware,(req, res) => {
+app.put('/editUser',(req, res) => {
   userController.editUser(req,res,io)
 });
 app.put('/editUserMobile',(req, res) => {
@@ -71,6 +71,7 @@ app.put('/editUserMobile',(req, res) => {
 app.put('/editUserMobilePrinc',(req, res) => {
   userController.editUserMobilePrinc(req,res,io)
 });
+app.post('/getSellingPointsByUserId',adminAndPro,userController.getSellingPointsByUserId)
 app.put('/resetPassword',(req, res) => {
   userController.resetPassword(req,res,io)
 });
@@ -103,6 +104,7 @@ app.get('/getTotalMemberCount',userController.getTotalMemberCount )
 app.get('/getTotalChildCount',userController.getTotalChildCount )
 app.get('/getBraceletAll',userController.getBraceletAll )
 app.get('/GetAllInfoUser',authMember,userController.GetAllInfoUser)
+app.get('/GetAllInfoUserWeb',adminAndPro,userController.GetAllInfoUser)
 app.get('/getUserStatistics',userController.getUserStatistics)
 
 app.post('/createBracelet', (req, res) => {

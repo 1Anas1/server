@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 module.exports = (req, res, next) => {
+  console.log(req.headers.authorization);
   const token = req.headers.authorization.split(' ')[1]; // Get the token from the request header
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decodedToken) => { // Verify the token with your JWT secret
