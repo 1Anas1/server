@@ -71,7 +71,8 @@ app.put('/editUserMobile',(req, res) => {
 app.put('/editUserMobilePrinc',(req, res) => {
   userController.editUserMobilePrinc(req,res,io)
 });
-app.post('/getSellingPointsByUserId',adminAndPro,userController.getSellingPointsByUserId)
+app.get('/getSellingPointsByUserId',adminAndPro,userController.getSellingPointsByUserId)
+app.get('/getCainByUserId',adminAndPro,userController.getCainByUserId)
 app.put('/resetPassword',(req, res) => {
   userController.resetPassword(req,res,io)
 });
